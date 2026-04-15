@@ -62,7 +62,7 @@ jobs:
         run: pip install -r tests/requirements.txt
 
       - name: Install Playwright browsers
-        run: python -m playwright install chromium --with-deps
+        run: python -m playwright install --with-deps chromium
 
       - name: Start Next.js server
         run: npm start &
