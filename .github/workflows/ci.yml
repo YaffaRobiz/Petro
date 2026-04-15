@@ -73,7 +73,7 @@ jobs:
       - name: Wait for server to be ready
         run: |
           for i in $(seq 1 30); do
-            if curl -sf http://localhost:3000 > /dev/null 2>&1; then
+            if curl -sf http://localhost:3000/petro_app_icon.png > /dev/null 2>&1; then
               echo "Server ready after ${i}*2s"
               exit 0
             fi
