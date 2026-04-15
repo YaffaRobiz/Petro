@@ -16,7 +16,7 @@
 .claude/
 
 # Supabase migrations (run manually in Supabase SQL Editor)
-supabase/
+/supabase/
 
 # vercel
 .vercel
