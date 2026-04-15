@@ -74,13 +74,14 @@ jobs:
         run: |
           for i in $(seq 1 30); do
             if curl -sf http://localhost:3000 > /dev/null 2>&1; then
-              echo "Server ready after ${i}s"
+              echo "Server ready after ${i}*2s"
               exit 0
             fi
             echo "Waiting... (${i}/30)"
             sleep 2
           done
-          echo "=== Server log ===" && cat /tmp/nextjs.log
+          LOG=$(cat /tmp/nextjs.log 2>/dev/null | head -60 | tr '\n' '|')
+          echo "::error::Server never started. Log: $LOG"
           exit 1
 
       - name: Run E2E tests
