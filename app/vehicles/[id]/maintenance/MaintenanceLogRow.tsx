@@ -20,12 +20,12 @@ export default function MaintenanceLogRow({
   const [isPending, startTransition] = useTransition()
 
   const rowClass = index % 2 === 0
-    ? "border-b border-gray-50"
-    : "border-b border-gray-50 bg-gray-50/30"
+    ? "border-b border-gray-50 dark:border-gray-800"
+    : "border-b border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/20"
 
   if (editing) {
     return (
-      <tr className="border-b border-blue-100 bg-blue-50/30">
+      <tr className="border-b border-blue-100 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-900/10">
         <td className="px-3 py-2">
           <input
             form={`edit-maint-${log.id}`}
@@ -33,7 +33,7 @@ export default function MaintenanceLogRow({
             type="date"
             defaultValue={log.date}
             required
-            className="w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </td>
         <td className="px-3 py-2">
@@ -44,7 +44,7 @@ export default function MaintenanceLogRow({
             defaultValue={log.odometer}
             required
             min={0}
-            className="w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+            className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
           />
         </td>
         <td className="px-3 py-2">
@@ -53,7 +53,7 @@ export default function MaintenanceLogRow({
             name="service_type"
             defaultValue={log.service_type}
             required
-            className="w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {SERVICE_TYPES.map((type) => (
               <option key={type} value={type}>{type}</option>
@@ -67,7 +67,7 @@ export default function MaintenanceLogRow({
             type="text"
             defaultValue={log.notes ?? ""}
             placeholder="Optional notes…"
-            className="w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </td>
         <td className="px-3 py-2">
@@ -79,7 +79,7 @@ export default function MaintenanceLogRow({
             required
             min={0}
             step="0.01"
-            className="w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+            className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
           />
         </td>
         <td className="px-3 py-2">
@@ -96,7 +96,7 @@ export default function MaintenanceLogRow({
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="px-3 py-1 text-xs text-gray-600 hover:text-gray-900 border border-gray-200 rounded-md transition-colors"
+              className="px-3 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-md transition-colors"
             >
               Cancel
             </button>
@@ -115,24 +115,24 @@ export default function MaintenanceLogRow({
 
   return (
     <tr className={rowClass}>
-      <td className="px-4 py-3 text-gray-900">
+      <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
         {new Date(log.date).toLocaleDateString("en-GB")}
       </td>
-      <td className="px-4 py-3 text-right text-gray-700">
+      <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
         {Number(log.odometer).toLocaleString()} km
       </td>
-      <td className="px-4 py-3 text-gray-700">{log.service_type}</td>
-      <td className="px-4 py-3 text-gray-500 max-w-xs truncate">
-        {log.notes ?? <span className="text-gray-300">—</span>}
+      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{log.service_type}</td>
+      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 max-w-xs truncate">
+        {log.notes ?? <span className="text-gray-300 dark:text-gray-600">—</span>}
       </td>
-      <td className="px-4 py-3 text-right text-gray-700 font-medium">
+      <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300 font-medium">
         €{Number(log.cost).toFixed(2)}
       </td>
       <td className="px-4 py-3">
         <div className="flex items-center justify-end gap-1">
           <button
             onClick={() => { setEditing(true); setConfirming(false) }}
-            className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors rounded-md hover:bg-blue-50"
+            className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20"
             aria-label="Edit"
           >
             <EditIcon className="w-4 h-4" />
@@ -140,7 +140,7 @@ export default function MaintenanceLogRow({
 
           {confirming ? (
             <div className="flex items-center gap-1.5 ml-1">
-              <span className="text-xs text-gray-500">Delete?</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">Delete?</span>
               <button
                 onClick={() => startTransition(() => deleteMaintenanceLog(log.id, licensePlate))}
                 disabled={isPending}
@@ -150,7 +150,7 @@ export default function MaintenanceLogRow({
               </button>
               <button
                 onClick={() => setConfirming(false)}
-                className="text-xs text-gray-400 hover:text-gray-600"
+                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 No
               </button>
@@ -158,7 +158,7 @@ export default function MaintenanceLogRow({
           ) : (
             <button
               onClick={() => setConfirming(true)}
-              className="p-1.5 text-gray-400 hover:text-red-500 transition-colors rounded-md hover:bg-red-50"
+              className="p-1.5 text-gray-400 hover:text-red-500 transition-colors rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"
               aria-label="Delete"
             >
               <TrashIcon className="w-4 h-4" />

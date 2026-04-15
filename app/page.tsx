@@ -76,39 +76,39 @@ export default async function DashboardPage() {
   return (
     <main className="w-full px-6 py-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 text-sm mt-1">Welcome back, {username}</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Welcome back, {username}</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
         <Link
           href="/vehicles"
-          className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-sm hover:border-blue-200 transition-all group"
+          className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 hover:shadow-sm hover:border-blue-200 dark:hover:border-blue-700 transition-all group"
         >
-          <p className="text-xs text-gray-400 uppercase tracking-wide">Vehicles</p>
-          <p className="text-3xl font-bold text-gray-900 mt-2">{totalVehicles}</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">Vehicles</p>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{totalVehicles}</p>
         </Link>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-xs text-gray-400 uppercase tracking-wide">Fuel Fill-Ups</p>
-          <p className="text-3xl font-bold text-gray-900 mt-2">{totalFillUps}</p>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+          <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">Fuel Fill-Ups</p>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{totalFillUps}</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-xs text-gray-400 uppercase tracking-wide">Services</p>
-          <p className="text-3xl font-bold text-gray-900 mt-2">{totalServices}</p>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+          <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">Services</p>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{totalServices}</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-xs text-gray-400 uppercase tracking-wide">Total Spent</p>
-          <p className="text-3xl font-bold text-gray-900 mt-2">€{totalSpent.toFixed(0)}</p>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+          <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total Spent</p>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">€{totalSpent.toFixed(0)}</p>
         </div>
       </div>
 
       {/* Recent Activity */}
       <div>
-        <h2 className="text-base font-semibold text-gray-900 mb-4">Recent Activity</h2>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h2>
 
         {allActivity.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 py-16 text-center text-gray-400">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 py-16 text-center text-gray-400 dark:text-gray-500">
             <p className="text-sm font-medium">No activity yet</p>
             <p className="text-sm mt-1">Add a vehicle and start logging to see activity here.</p>
             <Link
@@ -119,14 +119,14 @@ export default async function DashboardPage() {
             </Link>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Vehicle</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Event</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Date</th>
-                  <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Cost</th>
+                <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Vehicle</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Event</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Date</th>
+                  <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Cost</th>
                 </tr>
               </thead>
               <tbody>
@@ -140,30 +140,30 @@ export default async function DashboardPage() {
                   return (
                     <tr
                       key={item.id}
-                      className={i % 2 === 0 ? "border-b border-gray-50" : "border-b border-gray-50 bg-gray-50/30"}
+                      className={i % 2 === 0 ? "border-b border-gray-50 dark:border-gray-800" : "border-b border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/20"}
                     >
                       <td className="px-4 py-3">
                         {plate ? (
                           <Link
                             href={`/vehicles/${encodeURIComponent(plate)}`}
-                            className="font-medium text-gray-900 hover:text-blue-600 transition-colors"
+                            className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                           >
                             {vehicleName}
                           </Link>
                         ) : (
-                          <span className="font-medium text-gray-900">{vehicleName}</span>
+                          <span className="font-medium text-gray-900 dark:text-white">{vehicleName}</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1.5 text-gray-700">
+                        <span className="inline-flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
                           <span>{item.type === "fuel" ? "⛽" : "🔧"}</span>
                           {item.detail}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-500">
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                         {new Date(item.date).toLocaleDateString("en-GB")}
                       </td>
-                      <td className="px-4 py-3 text-right font-medium text-gray-900">
+                      <td className="px-4 py-3 text-right font-medium text-gray-900 dark:text-white">
                         €{item.cost.toFixed(2)}
                       </td>
                     </tr>

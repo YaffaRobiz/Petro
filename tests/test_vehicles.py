@@ -33,6 +33,17 @@ def test_vehicle_detail_page_shows_info(auth_page, base_url, test_vehicle):
     expect(auth_page.get_by_text(TEST_VEHICLE["fuel_type"])).to_be_visible()
 
 
+def test_vehicle_card_shows_current_odometer(auth_page, base_url, test_vehicle):
+    """Vehicle card shows 'Current Odometer' with the starting odometer when no logs exist."""
+    auth_page.goto(f"{base_url}/vehicles")
+    card = auth_page.locator(".bg-white.rounded-xl").filter(
+        has_text=TEST_VEHICLE["nickname"]
+    )
+    expect(card.get_by_text("Current Odometer")).to_be_visible()
+    # Starting odometer is 50000, no logs yet → shows 50,000 km
+    expect(card.get_by_text("50,000 km")).to_be_visible()
+
+
 def test_vehicle_detail_has_fuel_and_maintenance_links(auth_page, base_url, test_vehicle):
     """Vehicle detail page has links to Fuel Logs and Maintenance Logs."""
     auth_page.goto(f"{base_url}/vehicles/{TEST_PLATE}")

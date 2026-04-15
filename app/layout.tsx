@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Geist } from "next/font/google"
 import { headers } from "next/headers"
+import { ThemeProvider } from "@/components/ThemeProvider"
 import Navbar from "@/components/Navbar"
 import "./globals.css"
 
@@ -27,10 +28,12 @@ export default async function RootLayout({
   const showNavbar = !AUTH_ROUTES.includes(pathname)
 
   return (
-    <html lang="en">
-      <body className={`${geist.className} bg-gray-50 text-gray-900 antialiased`}>
-        {showNavbar && <Navbar />}
-        {children}
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${geist.className} bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 antialiased`}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          {showNavbar && <Navbar />}
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )

@@ -64,6 +64,26 @@ def test_edit_fill_up(auth_page, base_url, test_vehicle):
     expect(auth_page.get_by_text("€75.00")).to_be_visible()
 
 
+def test_km_per_liter_calculated_with_two_fill_ups(auth_page, base_url, test_vehicle):
+    """With two fill-ups, the second shows a km/L value based on odometer diff."""
+    # First fill-up at odometer 51000
+    add_test_fill_up(auth_page, base_url, odometer="51000")
+
+    # Second fill-up at 52000 km with 40 liters → km/L = (52000-51000)/40 = 25.0
+    go_to_fuel_page(auth_page, base_url)
+    auth_page.get_by_role("button", name="+ Add Fill-Up").click()
+    auth_page.fill('input[name="odometer"]', "52000")
+    auth_page.fill('input[name="liters"]', "40.00")
+    auth_page.fill('input[name="cost"]', "64.00")
+    auth_page.get_by_role("button", name="Save Fill-Up").click()
+    auth_page.wait_for_load_state("networkidle")
+
+    # The second fill-up (odometer 52000) should show 25.0 in the km/L column
+    expect(auth_page.get_by_text("25.0")).to_be_visible()
+    # Avg Efficiency stat card should also show a value (not —)
+    expect(auth_page.get_by_text("km/L")).to_be_visible()
+
+
 def test_delete_fill_up(auth_page, base_url, test_vehicle):
     """Deleting a fill-up removes it from the table."""
     add_test_fill_up(auth_page, base_url)

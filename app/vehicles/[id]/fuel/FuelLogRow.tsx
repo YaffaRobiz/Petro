@@ -9,10 +9,12 @@ export default function FuelLogRow({
   log,
   licensePlate,
   index,
+  efficiency,
 }: {
   log: FuelLog
   licensePlate: string
   index: number
+  efficiency: number | null
 }) {
   const [editing, setEditing] = useState(false)
   const [confirming, setConfirming] = useState(false)
@@ -23,12 +25,12 @@ export default function FuelLogRow({
     : 0
 
   const rowClass = index % 2 === 0
-    ? "border-b border-gray-50"
-    : "border-b border-gray-50 bg-gray-50/30"
+    ? "border-b border-gray-50 dark:border-gray-800"
+    : "border-b border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/20"
 
   if (editing) {
     return (
-      <tr className="border-b border-blue-100 bg-blue-50/30">
+      <tr className="border-b border-blue-100 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-900/10">
         <td className="px-3 py-2">
           <input
             form={`edit-fuel-${log.id}`}
@@ -36,7 +38,7 @@ export default function FuelLogRow({
             type="date"
             defaultValue={log.date}
             required
-            className="w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </td>
         <td className="px-3 py-2">
@@ -47,7 +49,7 @@ export default function FuelLogRow({
             defaultValue={log.odometer}
             required
             min={0}
-            className="w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+            className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
           />
         </td>
         <td className="px-3 py-2">
@@ -59,7 +61,7 @@ export default function FuelLogRow({
             required
             min={0}
             step="0.01"
-            className="w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+            className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
           />
         </td>
         <td className="px-3 py-2">
@@ -71,10 +73,11 @@ export default function FuelLogRow({
             required
             min={0}
             step="0.01"
-            className="w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+            className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
           />
         </td>
-        <td className="px-4 py-2 text-right text-gray-400 text-sm">—</td>
+        <td className="px-4 py-2 text-right text-gray-400 dark:text-gray-600 text-sm">—</td>
+        <td className="px-4 py-2 text-right text-gray-400 dark:text-gray-600 text-sm">—</td>
         <td className="px-3 py-2 text-right">
           <form
             id={`edit-fuel-${log.id}`}
@@ -89,7 +92,7 @@ export default function FuelLogRow({
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="px-3 py-1 text-xs text-gray-600 hover:text-gray-900 border border-gray-200 rounded-md transition-colors"
+              className="px-3 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-md transition-colors"
             >
               Cancel
             </button>
@@ -108,36 +111,37 @@ export default function FuelLogRow({
 
   return (
     <tr className={rowClass}>
-      <td className="px-4 py-3 text-gray-900">
+      <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
         {new Date(log.date).toLocaleDateString("en-GB")}
       </td>
-      <td className="px-4 py-3 text-right text-gray-700">
+      <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
         {Number(log.odometer).toLocaleString()} km
       </td>
-      <td className="px-4 py-3 text-right text-gray-700">
+      <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
         {Number(log.liters).toFixed(2)} L
       </td>
-      <td className="px-4 py-3 text-right text-gray-700 font-medium">
+      <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300 font-medium">
         €{Number(log.cost).toFixed(2)}
       </td>
-      <td className="px-4 py-3 text-right text-gray-500">
+      <td className="px-4 py-3 text-right text-gray-500 dark:text-gray-400">
         €{costPerLiter.toFixed(3)}
+      </td>
+      <td className="px-4 py-3 text-right text-gray-500 dark:text-gray-400">
+        {efficiency !== null ? `${efficiency.toFixed(1)}` : "—"}
       </td>
       <td className="px-4 py-3">
         <div className="flex items-center justify-end gap-1">
-          {/* Edit */}
           <button
             onClick={() => { setEditing(true); setConfirming(false) }}
-            className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors rounded-md hover:bg-blue-50"
+            className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20"
             aria-label="Edit"
           >
             <EditIcon className="w-4 h-4" />
           </button>
 
-          {/* Delete */}
           {confirming ? (
             <div className="flex items-center gap-1.5 ml-1">
-              <span className="text-xs text-gray-500">Delete?</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">Delete?</span>
               <button
                 onClick={() => startTransition(() => deleteFuelLog(log.id, licensePlate))}
                 disabled={isPending}
@@ -147,7 +151,7 @@ export default function FuelLogRow({
               </button>
               <button
                 onClick={() => setConfirming(false)}
-                className="text-xs text-gray-400 hover:text-gray-600"
+                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 No
               </button>
@@ -155,7 +159,7 @@ export default function FuelLogRow({
           ) : (
             <button
               onClick={() => setConfirming(true)}
-              className="p-1.5 text-gray-400 hover:text-red-500 transition-colors rounded-md hover:bg-red-50"
+              className="p-1.5 text-gray-400 hover:text-red-500 transition-colors rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"
               aria-label="Delete"
             >
               <TrashIcon className="w-4 h-4" />
