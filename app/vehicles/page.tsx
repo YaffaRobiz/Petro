@@ -69,7 +69,7 @@ export default async function VehiclesPage() {
 
                 <div className="text-sm">
                   <span className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">Current Odometer</span>
-                  <p className="font-medium text-gray-900 dark:text-white mt-0.5">{currentOdometer.toLocaleString()} km</p>
+                  <p className="font-medium text-gray-900 dark:text-white mt-0.5">{currentOdometer.toLocaleString('en-US')} km</p>
                 </div>
 
                 <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100 dark:border-gray-800">

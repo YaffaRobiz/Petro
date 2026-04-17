@@ -67,7 +67,7 @@ export default async function VehicleDetailPage({
           </div>
           <div>
             <dt className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">Current Odometer</dt>
-            <dd className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">{currentOdometer.toLocaleString()} km</dd>
+            <dd className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">{currentOdometer.toLocaleString('en-US')} km</dd>
           </div>
         </dl>
       </div>
