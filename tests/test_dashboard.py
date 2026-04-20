@@ -5,7 +5,7 @@ from playwright.sync_api import expect
 from conftest import TEST_PLATE, TEST_VEHICLE, TEST_FUEL, TEST_MAINTENANCE
 
 
-def test_dashboard_loads(auth_page, base_url):
+def test_dashboard_loads(auth_page, base_url, test_vehicle):
     """Dashboard page loads and shows the key metric card labels."""
     auth_page.goto(f"{base_url}/")
     expect(auth_page.get_by_text("Dashboard")).to_be_visible()

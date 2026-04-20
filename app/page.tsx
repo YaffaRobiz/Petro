@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 
@@ -21,24 +22,42 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/login")
 
+  const { data: vehicles } = await supabase
+    .from("vehicles")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at")
+
+  if (!vehicles || vehicles.length === 0) redirect("/vehicles/new")
+
+  // Resolve selected vehicle from cookie
+  const cookieStore = await cookies()
+  const selectedId = cookieStore.get("selected_vehicle_id")?.value
+  const vehicle = vehicles.find(v => v.id === selectedId) ?? vehicles[0]
+
   const now = new Date()
   const thisMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`
   const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
   const prevMonthStr = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}-01`
   const prevMonthName = prevMonth.toLocaleString("en-US", { month: "long" })
 
-  const [vehiclesRes, fuelRes, maintRes] = await Promise.all([
-    supabase.from("vehicles").select("*").eq("user_id", user.id).order("created_at"),
-    supabase.from("fuel_logs").select("id, date, cost, vehicle_id, odometer, liters").eq("user_id", user.id).order("date"),
-    supabase.from("maintenance_logs").select("id, date, cost, vehicle_id, service_type, odometer").eq("user_id", user.id).order("date"),
+  const [fuelRes, maintRes] = await Promise.all([
+    supabase
+      .from("fuel_logs")
+      .select("id, date, cost, vehicle_id, odometer, liters")
+      .eq("vehicle_id", vehicle.id)
+      .order("date"),
+    supabase
+      .from("maintenance_logs")
+      .select("id, date, cost, vehicle_id, service_type, odometer")
+      .eq("vehicle_id", vehicle.id)
+      .order("date"),
   ])
 
-  const vehicles = vehiclesRes.data ?? []
   const fuelLogs = fuelRes.data ?? []
   const maintLogs = maintRes.data ?? []
-  const primary = vehicles[0] ?? null
 
-  // Monthly spend
+  // Monthly spend (this vehicle only)
   const thisMonthSpent = [
     ...fuelLogs.filter(l => l.date >= thisMonthStr),
     ...maintLogs.filter(l => l.date >= thisMonthStr),
@@ -59,11 +78,8 @@ export default async function DashboardPage() {
     return d.toLocaleString("en-US", { month: "short" })
   })
 
-  // Fuel efficiency (L/100km) for primary vehicle
-  const vFuel = fuelLogs
-    .filter(l => primary && l.vehicle_id === primary.id)
-    .sort((a, b) => Number(a.odometer) - Number(b.odometer))
-
+  // Fuel efficiency (L/100km)
+  const vFuel = [...fuelLogs].sort((a, b) => Number(a.odometer) - Number(b.odometer))
   const efficiencies: number[] = []
   for (let i = 1; i < vFuel.length; i++) {
     const dist = Number(vFuel[i].odometer) - Number(vFuel[i - 1].odometer)
@@ -86,21 +102,18 @@ export default async function DashboardPage() {
 
   // Current odometer
   const allOdos = [
-    ...fuelLogs.filter(l => primary && l.vehicle_id === primary.id).map(l => Number(l.odometer)),
-    ...maintLogs.filter(l => primary && l.vehicle_id === primary.id).map(l => Number(l.odometer)),
+    ...fuelLogs.map(l => Number(l.odometer)),
+    ...maintLogs.map(l => Number(l.odometer)),
   ]
-  const currentOdo = primary
-    ? Math.max(primary.initial_odometer, ...(allOdos.length ? allOdos : [0]))
-    : 0
+  const currentOdo = Math.max(vehicle.initial_odometer, ...(allOdos.length ? allOdos : [0]))
 
   // Recent maintenance
-  const recentMaint = maintLogs
-    .filter(l => primary && l.vehicle_id === primary.id)
+  const recentMaint = [...maintLogs]
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 3)
 
-  const primaryName = primary?.nickname || (primary ? `${primary.make} ${primary.model}` : null)
-  const plateEncoded = primary ? encodeURIComponent(primary.license_plate) : null
+  const primaryName = vehicle.nickname || `${vehicle.make} ${vehicle.model}`
+  const plateEncoded = encodeURIComponent(vehicle.license_plate)
 
   const cardCls = "bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6"
   const labelCls = "text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest"
@@ -111,19 +124,15 @@ export default async function DashboardPage() {
       <div className="flex items-start justify-between px-8 pt-8 pb-5">
         <div>
           <h1 className="text-[22px] font-semibold text-gray-900 dark:text-white leading-tight">Dashboard</h1>
-          {primaryName && (
-            <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">· {primaryName}</p>
-          )}
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">· {primaryName}</p>
         </div>
         <div className="flex items-center gap-2 pt-1">
-          {plateEncoded && (
-            <Link
-              href={`/vehicles/${plateEncoded}/fuel`}
-              className="flex items-center gap-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium px-4 py-2 rounded-full hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors"
-            >
-              <span className="text-base leading-none">+</span> New fill-up
-            </Link>
-          )}
+          <Link
+            href={`/vehicles/${plateEncoded}/fuel`}
+            className="flex items-center gap-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium px-4 py-2 rounded-full hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors"
+          >
+            <span className="text-base leading-none">+</span> New fill-up
+          </Link>
         </div>
       </div>
 
@@ -225,14 +234,12 @@ export default async function DashboardPage() {
           ) : (
             <p className="mt-3 text-sm text-gray-300 dark:text-gray-700">No services logged</p>
           )}
-          {plateEncoded && (
-            <Link
-              href={`/vehicles/${plateEncoded}/maintenance`}
-              className="mt-4 inline-block text-xs font-medium text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-lg transition-colors"
-            >
-              View all
-            </Link>
-          )}
+          <Link
+            href={`/vehicles/${plateEncoded}/maintenance`}
+            className="mt-4 inline-block text-xs font-medium text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            View all
+          </Link>
         </div>
 
         {/* Last Fill-Up */}
@@ -268,24 +275,12 @@ export default async function DashboardPage() {
         {/* Odometer */}
         <div className={`col-span-2 ${cardCls}`}>
           <p className={labelCls}>Odometer</p>
-          {primary ? (
-            <div className="flex items-baseline gap-2 mt-4">
-              <span className="text-[40px] font-bold text-gray-900 dark:text-white leading-none tracking-tight">
-                {currentOdo.toLocaleString("en-US")}
-              </span>
-              <span className="text-base text-gray-400 dark:text-gray-500">km</span>
-            </div>
-          ) : (
-            <div className="mt-4">
-              <p className="text-sm text-gray-300 dark:text-gray-700 mb-3">No vehicles yet</p>
-              <Link
-                href="/vehicles/new"
-                className="text-sm text-blue-600 hover:underline font-medium"
-              >
-                Add a vehicle →
-              </Link>
-            </div>
-          )}
+          <div className="flex items-baseline gap-2 mt-4">
+            <span className="text-[40px] font-bold text-gray-900 dark:text-white leading-none tracking-tight">
+              {currentOdo.toLocaleString("en-US")}
+            </span>
+            <span className="text-base text-gray-400 dark:text-gray-500">km</span>
+          </div>
         </div>
 
       </div>

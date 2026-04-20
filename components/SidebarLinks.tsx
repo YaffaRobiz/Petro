@@ -90,11 +90,11 @@ export default function SidebarLinks() {
             href={href}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
               active
-                ? "bg-white/10 text-white"
-                : "text-white/40 hover:text-white/70 hover:bg-white/5"
+                ? "bg-gray-100 text-gray-900"
+                : "text-gray-400 hover:text-gray-700 hover:bg-gray-50"
             }`}
           >
-            <span className={active ? "text-green-400" : ""}>
+            <span className={active ? "text-green-500" : ""}>
               <Icon active={active} />
             </span>
             {label}

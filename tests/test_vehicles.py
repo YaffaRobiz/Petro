@@ -67,7 +67,7 @@ def test_delete_vehicle(auth_page, base_url):
     auth_page.fill('input[name="nickname"]', TEST_VEHICLE["nickname"])
     auth_page.fill('input[name="initial_odometer"]', TEST_VEHICLE["odometer"])
     auth_page.get_by_role("button", name="Save Vehicle").click()
-    auth_page.wait_for_url(f"{base_url}/vehicles/{TEST_PLATE}")
+    auth_page.wait_for_url(f"{base_url}/")
 
     # Delete
     auth_page.goto(f"{base_url}/vehicles")
