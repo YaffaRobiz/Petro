@@ -29,7 +29,7 @@ export default async function DashboardPage() {
     .eq("user_id", user.id)
     .order("created_at")
 
-  if (!vehicles || vehicles.length === 0) redirect("/vehicles/new")
+  if (!vehicles || vehicles.length === 0) redirect("/new-vehicle")
 
   // Resolve selected vehicle from cookie
   const cookieStore = await cookies()
@@ -147,7 +147,7 @@ export default async function DashboardPage() {
         </div>
         <div className="flex items-center gap-2 pt-1">
           <Link
-            href={`/vehicles/${plateEncoded}/fuel`}
+            href={`/vehicle/${plateEncoded}/fuel`}
             className="flex items-center gap-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium px-4 py-2 rounded-full hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors"
           >
             <span className="text-base leading-none">+</span> New fill-up
@@ -246,7 +246,7 @@ export default async function DashboardPage() {
             <p className="mt-3 text-sm text-gray-300 dark:text-gray-700">No services logged</p>
           )}
           <Link
-            href={`/vehicles/${plateEncoded}/maintenance`}
+            href={`/vehicle/${plateEncoded}/maintenance`}
             className="mt-4 inline-block text-xs font-medium text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-lg transition-colors"
           >
             View all

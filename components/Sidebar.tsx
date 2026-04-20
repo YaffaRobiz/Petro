@@ -20,6 +20,11 @@ export default async function Sidebar() {
   const cookieStore = await cookies()
   const selectedId = cookieStore.get("selected_vehicle_id")?.value ?? null
 
+  const selectedVehicle = vehicles?.find(v => v.id === selectedId) ?? vehicles?.[0] ?? null
+  const vehicleHref = selectedVehicle
+    ? `/vehicle/${encodeURIComponent(selectedVehicle.license_plate)}`
+    : "/new-vehicle"
+
   return (
     <aside className="w-[220px] min-h-screen bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 z-20">
       {/* Logo */}
@@ -29,7 +34,7 @@ export default async function Sidebar() {
       </div>
 
       {/* Nav links */}
-      <SidebarLinks />
+      <SidebarLinks vehicleHref={vehicleHref} />
 
       {/* Footer */}
       <div className="mt-auto px-3 pb-4 space-y-2">

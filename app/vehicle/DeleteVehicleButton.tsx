@@ -9,18 +9,18 @@ export default function DeleteVehicleButton({ id }: { id: string }) {
 
   if (confirming) {
     return (
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-500">Delete?</span>
+      <div className="flex items-center gap-3">
+        <span className="text-sm text-gray-500 dark:text-gray-400">Are you sure?</span>
         <button
           onClick={() => startTransition(() => deleteVehicle(id))}
           disabled={isPending}
-          className="text-xs text-red-600 hover:text-red-700 font-medium disabled:opacity-50"
+          className="text-sm font-medium text-white bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
         >
-          {isPending ? "Deleting…" : "Yes"}
+          {isPending ? "Deleting…" : "Yes, delete"}
         </button>
         <button
           onClick={() => setConfirming(false)}
-          className="text-xs text-gray-500 hover:text-gray-700"
+          className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
         >
           Cancel
         </button>
@@ -31,9 +31,9 @@ export default function DeleteVehicleButton({ id }: { id: string }) {
   return (
     <button
       onClick={() => setConfirming(true)}
-      className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+      className="text-sm font-medium text-red-500 hover:text-red-600 border border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-1.5 rounded-lg transition-colors"
     >
-      Delete
+      Delete vehicle
     </button>
   )
 }
