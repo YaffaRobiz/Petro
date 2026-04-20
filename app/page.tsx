@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import Link from "next/link"
+import MonthlyChart, { type MonthlyChartData } from "@/components/MonthlyChart"
 
 function buildSparklinePath(values: number[], w: number, h: number) {
   if (values.length < 2) return { line: "", area: "" }
@@ -72,23 +73,41 @@ export default async function DashboardPage() {
   const spentPct = lastMonthSpent > 0 ? Math.abs((spentDiff / lastMonthSpent) * 100) : null
   const spentDown = spentDiff <= 0
 
-  // Last 12 month labels
-  const monthLabels = Array.from({ length: 12 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - 11 + i, 1)
-    return d.toLocaleString("en-US", { month: "short" })
+  // Monthly spending Jan–Dec of current year (for bar chart)
+  const MONTH_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+  const currentMonthIdx = now.getMonth()
+  const chartData: MonthlyChartData[] = MONTH_LABELS.map((label, i) => {
+    const prefix = `${now.getFullYear()}-${String(i + 1).padStart(2, "0")}`
+    const amount = [
+      ...fuelLogs.filter(l => l.date.startsWith(prefix)),
+      ...maintLogs.filter(l => l.date.startsWith(prefix)),
+    ].reduce((s, l) => s + Number(l.cost), 0)
+    return { label, amount, isCurrent: i === currentMonthIdx }
   })
 
-  // Fuel efficiency (L/100km)
+  // Fuel efficiency (km/L)
   const vFuel = [...fuelLogs].sort((a, b) => Number(a.odometer) - Number(b.odometer))
   const efficiencies: number[] = []
   for (let i = 1; i < vFuel.length; i++) {
     const dist = Number(vFuel[i].odometer) - Number(vFuel[i - 1].odometer)
     const liters = Number(vFuel[i].liters)
-    if (dist > 0 && liters > 0) efficiencies.push((liters / dist) * 100)
+    if (dist > 0 && liters > 0) efficiencies.push(dist / liters)
   }
   const avgEff = efficiencies.length > 0
     ? efficiencies.reduce((s, e) => s + e, 0) / efficiencies.length
     : null
+
+  // Efficiency delta: compare first-half avg vs second-half avg
+  const effHalf = Math.floor(efficiencies.length / 2)
+  const prevAvgEff = effHalf > 0
+    ? efficiencies.slice(0, effHalf).reduce((s, e) => s + e, 0) / effHalf
+    : null
+  const currAvgEff = effHalf > 0
+    ? efficiencies.slice(effHalf).reduce((s, e) => s + e, 0) / (efficiencies.length - effHalf)
+    : null
+  const effDelta = currAvgEff !== null && prevAvgEff !== null ? currAvgEff - prevAvgEff : null
+  const effPct = effDelta !== null && prevAvgEff !== null ? Math.abs((effDelta / prevAvgEff) * 100) : null
+  const effUp = effDelta !== null && effDelta > 0  // km/L: higher = better
 
   const { line: sparkLine, area: sparkArea } = buildSparklinePath(efficiencies.slice(-12), 110, 44)
 
@@ -147,35 +166,17 @@ export default async function DashboardPage() {
               €{thisMonthSpent.toFixed(2)}
             </span>
             {spentPct !== null && (
-              <span
-                className={`mb-1 inline-flex items-center gap-1.5 text-[13px] font-medium px-2.5 py-1 rounded-full ${
-                  spentDown
-                    ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                    : "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                }`}
-              >
-                {spentDown ? "↓" : "↑"} {spentPct.toFixed(1)}%
-                <span className="font-normal text-gray-400 dark:text-gray-500">
+              <div className="mb-1 flex items-center gap-2 text-[13px]">
+                <span className={`font-semibold px-2 py-0.5 rounded-full ${spentDown ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400"}`}>
+                  {spentDown ? "↓" : "↑"} {spentPct.toFixed(1)}%
+                </span>
+                <span className="text-gray-400 dark:text-gray-500">
                   €{Math.abs(spentDiff).toFixed(2)} {spentDown ? "less" : "more"} than {prevMonthName}
                 </span>
-              </span>
+              </div>
             )}
           </div>
-          {/* Month timeline */}
-          <div className="flex justify-between mt-6 pt-4 border-t border-gray-50 dark:border-gray-800">
-            {monthLabels.map((m, i) => (
-              <span
-                key={i}
-                className={`text-[11px] ${
-                  i === 11
-                    ? "text-gray-700 dark:text-gray-300 font-medium"
-                    : "text-gray-200 dark:text-gray-700"
-                }`}
-              >
-                {m}
-              </span>
-            ))}
-          </div>
+          <MonthlyChart data={chartData} />
         </div>
 
         {/* Fuel Consumption */}
@@ -193,10 +194,20 @@ export default async function DashboardPage() {
                   <span className="text-[40px] font-bold text-gray-900 dark:text-white leading-none tracking-tight">
                     {avgEff.toFixed(1)}
                   </span>
-                  <span className="text-base text-gray-400 dark:text-gray-500 pb-0.5">L/100km</span>
+                  <span className="text-base text-gray-400 dark:text-gray-500 pb-0.5">km/L</span>
                 </div>
               ) : (
                 <span className="text-3xl font-bold text-gray-200 dark:text-gray-700 leading-none">—</span>
+              )}
+              {effPct !== null && prevAvgEff !== null && (
+                <div className="mt-2 flex items-center gap-2 text-[13px]">
+                  <span className={`font-semibold px-2 py-0.5 rounded-full ${effUp ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400"}`}>
+                    {effUp ? "↑" : "↓"} {effPct.toFixed(1)}%
+                  </span>
+                  <span className="text-gray-400 dark:text-gray-500">
+                    from {prevAvgEff.toFixed(1)}
+                  </span>
+                </div>
               )}
             </div>
             {sparkLine && (
@@ -259,7 +270,7 @@ export default async function DashboardPage() {
                 { value: `€${Number(lastFill.cost).toFixed(2)}`, label: "total" },
                 { value: Number(lastFill.liters).toFixed(1), label: "liters" },
                 { value: `€${(Number(lastFill.cost) / Number(lastFill.liters)).toFixed(2)}`, label: "per liter" },
-                { value: lastFillEff !== null ? lastFillEff.toFixed(1) : "—", label: "L/100km" },
+                { value: lastFillEff !== null ? lastFillEff.toFixed(1) : "—", label: "km/L" },
               ].map(({ value, label }) => (
                 <div key={label}>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">{value}</p>
@@ -270,6 +281,12 @@ export default async function DashboardPage() {
           ) : (
             <p className="mt-3 text-sm text-gray-300 dark:text-gray-700">No fill-ups logged</p>
           )}
+          <Link
+            href={`/vehicles/${plateEncoded}/fuel`}
+            className="mt-4 inline-block text-xs font-medium text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            View all
+          </Link>
         </div>
 
         {/* Odometer */}
