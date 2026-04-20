@@ -143,7 +143,7 @@ export default async function DashboardPage() {
       <div className="flex items-start justify-between px-8 pt-8 pb-5">
         <div>
           <h1 className="text-[22px] font-semibold text-gray-900 dark:text-white leading-tight">Dashboard</h1>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">· {primaryName}</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">{primaryName}</p>
         </div>
         <div className="flex items-center gap-2 pt-1">
           <Link
