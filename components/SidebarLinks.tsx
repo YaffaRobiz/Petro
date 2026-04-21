@@ -50,35 +50,35 @@ function ChartBarIcon({ active }: { active: boolean }) {
   )
 }
 
-const links: NavLink[] = [
-  {
-    href: "/",
-    label: "Dashboard",
-    icon: GridIcon,
-    matchFn: p => p === "/",
-  },
-  {
-    href: "/vehicles",
-    label: "Vehicle",
-    icon: CarIcon,
-    matchFn: p => p.startsWith("/vehicles") && !p.includes("/maintenance"),
-  },
-  {
-    href: "/vehicles",
-    label: "Maintenance",
-    icon: WrenchIcon,
-    matchFn: p => p.includes("/maintenance"),
-  },
-  {
-    href: "/vehicles",
-    label: "Reports",
-    icon: ChartBarIcon,
-    matchFn: () => false,
-  },
-]
-
-export default function SidebarLinks() {
+export default function SidebarLinks({ vehicleHref }: { vehicleHref: string }) {
   const pathname = usePathname()
+
+  const links: NavLink[] = [
+    {
+      href: "/",
+      label: "Dashboard",
+      icon: GridIcon,
+      matchFn: p => p === "/",
+    },
+    {
+      href: vehicleHref,
+      label: "Vehicle",
+      icon: CarIcon,
+      matchFn: p => p.startsWith("/vehicle") && !p.includes("/maintenance") && !p.includes("/fuel"),
+    },
+    {
+      href: vehicleHref ? `${vehicleHref}/maintenance` : "/vehicles",
+      label: "Maintenance",
+      icon: WrenchIcon,
+      matchFn: p => p.startsWith("/vehicle") && p.includes("/maintenance"),
+    },
+    {
+      href: "/",
+      label: "Reports",
+      icon: ChartBarIcon,
+      matchFn: () => false,
+    },
+  ]
 
   return (
     <nav className="flex-1 px-3 py-2 space-y-0.5">

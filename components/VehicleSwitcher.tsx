@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { switchVehicle } from "@/app/actions/switchVehicle"
 
@@ -22,6 +22,7 @@ export default function VehicleSwitcher({
 }) {
   const [open, setOpen] = useState(false)
   const router = useRouter()
+  const pathname = usePathname()
 
   const selected = vehicles.find(v => v.id === selectedId) ?? vehicles[0]
   if (!selected) return null
@@ -31,7 +32,14 @@ export default function VehicleSwitcher({
   async function handleSwitch(id: string) {
     await switchVehicle(id)
     setOpen(false)
-    router.refresh()
+    const newVehicle = vehicles.find(v => v.id === id)
+    if (newVehicle && pathname.startsWith("/vehicle/")) {
+      const newPlate = encodeURIComponent(newVehicle.license_plate)
+      const oldPlate = encodeURIComponent(selected.license_plate)
+      router.push(pathname.replace(`/vehicle/${oldPlate}`, `/vehicle/${newPlate}`))
+    } else {
+      router.refresh()
+    }
   }
 
   return (
@@ -64,7 +72,7 @@ export default function VehicleSwitcher({
             })}
             <div className="border-t border-gray-100">
               <Link
-                href="/vehicles/new"
+                href="/new-vehicle"
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-2 px-4 py-3 text-sm text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors"
               >
