@@ -3,6 +3,7 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import MonthlyChart, { type MonthlyChartData } from "@/components/MonthlyChart"
+import NewFillUpModal from "@/components/NewFillUpModal"
 
 function buildSparklinePath(values: number[], w: number, h: number) {
   if (values.length < 2) return { line: "", area: "" }
@@ -146,12 +147,7 @@ export default async function DashboardPage() {
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">{primaryName}</p>
         </div>
         <div className="flex items-center gap-2 pt-1">
-          <Link
-            href={`/vehicle/${plateEncoded}/fuel`}
-            className="flex items-center gap-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium px-4 py-2 rounded-full hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors"
-          >
-            <span className="text-base leading-none">+</span> New fill-up
-          </Link>
+          <NewFillUpModal vehicleId={vehicle.id} licensePlate={vehicle.license_plate} currentOdometer={currentOdo} />
         </div>
       </div>
 

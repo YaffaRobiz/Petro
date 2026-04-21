@@ -13,6 +13,21 @@ export async function addFuelLog(vehicleId: string, licensePlate: string, formDa
   const liters = parseFloat(formData.get("liters") as string)
   const cost = parseFloat(formData.get("cost") as string)
 
+  // Verify odometer is greater than current max
+  const [fuelMax, maintMax, vehicle] = await Promise.all([
+    supabase.from("fuel_logs").select("odometer").eq("vehicle_id", vehicleId).order("odometer", { ascending: false }).limit(1).single(),
+    supabase.from("maintenance_logs").select("odometer").eq("vehicle_id", vehicleId).order("odometer", { ascending: false }).limit(1).single(),
+    supabase.from("vehicles").select("initial_odometer").eq("id", vehicleId).single(),
+  ])
+  const currentMax = Math.max(
+    vehicle.data?.initial_odometer ?? 0,
+    fuelMax.data?.odometer ?? 0,
+    maintMax.data?.odometer ?? 0,
+  )
+  if (odometer <= currentMax) {
+    throw new Error(`Odometer must be greater than current value (${currentMax.toLocaleString("en-US")} km)`)
+  }
+
   const { error } = await supabase.from("fuel_logs").insert({
     user_id: user.id,
     vehicle_id: vehicleId,
@@ -24,7 +39,8 @@ export async function addFuelLog(vehicleId: string, licensePlate: string, formDa
 
   if (error) throw new Error(error.message)
 
-  revalidatePath(`/vehicles/${encodeURIComponent(licensePlate)}/fuel`)
+  revalidatePath(`/vehicle/${encodeURIComponent(licensePlate)}/fuel`)
+  revalidatePath("/")
 }
 
 export async function updateFuelLog(id: string, licensePlate: string, formData: FormData) {
@@ -45,7 +61,8 @@ export async function updateFuelLog(id: string, licensePlate: string, formData: 
 
   if (error) throw new Error(error.message)
 
-  revalidatePath(`/vehicles/${encodeURIComponent(licensePlate)}/fuel`)
+  revalidatePath(`/vehicle/${encodeURIComponent(licensePlate)}/fuel`)
+  revalidatePath("/")
 }
 
 export async function deleteFuelLog(id: string, licensePlate: string) {
@@ -61,5 +78,6 @@ export async function deleteFuelLog(id: string, licensePlate: string) {
 
   if (error) throw new Error(error.message)
 
-  revalidatePath(`/vehicles/${encodeURIComponent(licensePlate)}/fuel`)
+  revalidatePath(`/vehicle/${encodeURIComponent(licensePlate)}/fuel`)
+  revalidatePath("/")
 }

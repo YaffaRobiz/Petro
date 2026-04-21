@@ -34,9 +34,9 @@ export default function AddFuelForm({
     return (
       <button
         onClick={() => setOpen(true)}
-        className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+        className="flex items-center gap-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium px-4 py-2 rounded-full hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors"
       >
-        + Add Fill-Up
+        <span className="text-base leading-none">+</span> New fill-up
       </button>
     )
   }

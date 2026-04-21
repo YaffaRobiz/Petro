@@ -39,6 +39,14 @@ function WrenchIcon({ active }: { active: boolean }) {
   )
 }
 
+function DropletIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2 : 1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2C6 10 4 14 4 16a8 8 0 0 0 16 0c0-2-2-6-8-14z" />
+    </svg>
+  )
+}
+
 function ChartBarIcon({ active }: { active: boolean }) {
   return (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2 : 1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -67,7 +75,13 @@ export default function SidebarLinks({ vehicleHref }: { vehicleHref: string }) {
       matchFn: p => p.startsWith("/vehicle") && !p.includes("/maintenance") && !p.includes("/fuel"),
     },
     {
-      href: vehicleHref ? `${vehicleHref}/maintenance` : "/vehicles",
+      href: vehicleHref ? `${vehicleHref}/fuel` : "/",
+      label: "Refueling",
+      icon: DropletIcon,
+      matchFn: p => p.startsWith("/vehicle") && p.includes("/fuel"),
+    },
+    {
+      href: vehicleHref ? `${vehicleHref}/maintenance` : "/",
       label: "Maintenance",
       icon: WrenchIcon,
       matchFn: p => p.startsWith("/vehicle") && p.includes("/maintenance"),

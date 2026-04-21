@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect, notFound } from "next/navigation"
-import Link from "next/link"
-import AddFuelForm from "./AddFuelForm"
-import FuelLogRow from "./FuelLogRow"
+import FuelCostChart, { type ChartBar } from "./FuelCostChart"
+import FuelTable from "./FuelTable"
+import NewFillUpModal from "@/components/NewFillUpModal"
 
 export default async function FuelLogPage({
   params,
@@ -18,124 +18,124 @@ export default async function FuelLogPage({
 
   const { data: vehicle } = await supabase
     .from("vehicles")
-    .select("id, make, model, nickname, license_plate")
+    .select("id, make, model, nickname, license_plate, initial_odometer")
     .eq("license_plate", licensePlate)
     .eq("user_id", user.id)
     .single()
 
   if (!vehicle) notFound()
 
-  const { data: logs } = await supabase
-    .from("fuel_logs")
-    .select("*")
-    .eq("vehicle_id", vehicle.id)
-    .order("date", { ascending: false })
+  const [{ data: logs }, { data: maintOdos }] = await Promise.all([
+    supabase.from("fuel_logs").select("*").eq("vehicle_id", vehicle.id).order("date", { ascending: false }),
+    supabase.from("maintenance_logs").select("odometer").eq("vehicle_id", vehicle.id),
+  ])
 
-  // Stats
-  const totalFillUps = logs?.length ?? 0
-  const totalCost = logs?.reduce((sum, l) => sum + Number(l.cost), 0) ?? 0
-  const totalLiters = logs?.reduce((sum, l) => sum + Number(l.liters), 0) ?? 0
-  const avgCostPerFillUp = totalFillUps > 0 ? totalCost / totalFillUps : 0
+  const allLogs = logs ?? []
 
-  // Compute km/L per fill-up
-  // Sort ascending by odometer to compute distance diffs
-  const sortedAsc = [...(logs ?? [])].sort((a, b) => Number(a.odometer) - Number(b.odometer))
+  const allOdos = [
+    ...allLogs.map(l => Number(l.odometer)),
+    ...(maintOdos ?? []).map(l => Number(l.odometer)),
+  ]
+  const currentOdometer = allOdos.length > 0
+    ? Math.max(vehicle.initial_odometer, ...allOdos)
+    : vehicle.initial_odometer
+
+  // Efficiency per fill-up (km/L), keyed by log id
+  const sortedAsc = [...allLogs].sort((a, b) => Number(a.odometer) - Number(b.odometer))
   const efficiencyById: Record<string, number | null> = {}
   for (let i = 0; i < sortedAsc.length; i++) {
     if (i === 0) {
-      efficiencyById[sortedAsc[i].id] = null // first fill-up: no previous odometer
+      efficiencyById[sortedAsc[i].id] = null
     } else {
-      const distance = Number(sortedAsc[i].odometer) - Number(sortedAsc[i - 1].odometer)
+      const dist = Number(sortedAsc[i].odometer) - Number(sortedAsc[i - 1].odometer)
       const liters = Number(sortedAsc[i].liters)
-      efficiencyById[sortedAsc[i].id] = distance > 0 && liters > 0 ? distance / liters : null
+      efficiencyById[sortedAsc[i].id] = dist > 0 && liters > 0 ? dist / liters : null
     }
   }
 
-  // Average km/L across fill-ups that have a computed value
-  const efficiencyValues = Object.values(efficiencyById).filter((v): v is number => v !== null)
-  const avgEfficiency = efficiencyValues.length > 0
-    ? efficiencyValues.reduce((s, v) => s + v, 0) / efficiencyValues.length
+  const effValues = Object.values(efficiencyById).filter((v): v is number => v !== null)
+  const avgEfficiency = effValues.length > 0
+    ? effValues.reduce((s, v) => s + v, 0) / effValues.length
     : null
 
-  const vehicleName = vehicle.nickname || `${vehicle.make} ${vehicle.model}`
+  const totalCost = allLogs.reduce((s, l) => s + Number(l.cost), 0)
+
+  // Monthly chart data — current year
+  const now = new Date()
+  const MONTH_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+  const monthlyData: ChartBar[] = MONTH_LABELS.map((label, i) => {
+    const prefix = `${now.getFullYear()}-${String(i + 1).padStart(2, "0")}`
+    const amount = allLogs
+      .filter(l => l.date.startsWith(prefix))
+      .reduce((s, l) => s + Number(l.cost), 0)
+    return { label, amount, isCurrent: i === now.getMonth() }
+  })
+
+  // Yearly chart data — always 3 columns: 2 years ago, last year, current year
+  const currentYear = now.getFullYear()
+  const yearlyData: ChartBar[] = [currentYear - 4, currentYear - 3, currentYear - 2, currentYear - 1, currentYear].map(y => ({
+    label: String(y).slice(2),
+    amount: allLogs.filter(l => l.date.startsWith(String(y))).reduce((s, l) => s + Number(l.cost), 0),
+    isCurrent: y === currentYear,
+  }))
+
+  const cardCls = "bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6"
+  const labelCls = "text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest"
 
   return (
-    <main className="w-full px-6 py-8">
-      <div className="mb-6">
-        <Link
-          href={`/vehicle/${encodeURIComponent(licensePlate)}`}
-          className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-        >
-          ← {vehicleName}
-        </Link>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-2">Fuel Logs</h1>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">Fill-Ups</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{totalFillUps}</p>
-        </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total Cost</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">€{totalCost.toFixed(2)}</p>
-        </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total Liters</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{totalLiters.toFixed(1)} L</p>
-        </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">Avg per Fill-Up</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">€{avgCostPerFillUp.toFixed(2)}</p>
-        </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">Avg Efficiency</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-            {avgEfficiency !== null ? `${avgEfficiency.toFixed(1)} km/L` : "—"}
+    <div className="flex flex-col min-h-screen">
+      {/* Header */}
+      <div className="flex items-start justify-between px-8 pt-8 pb-5">
+        <div>
+          <h1 className="text-[22px] font-semibold text-gray-900 dark:text-white leading-tight">Refueling</h1>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
+            {vehicle.nickname || `${vehicle.make} ${vehicle.model}`}
           </p>
         </div>
+        <div className="pt-1">
+          <NewFillUpModal vehicleId={vehicle.id} licensePlate={licensePlate} currentOdometer={currentOdometer} />
+        </div>
       </div>
 
-      {/* Add form */}
-      <div className="mb-6">
-        <AddFuelForm vehicleId={vehicle.id} licensePlate={licensePlate} />
-      </div>
+      <div className="px-8 pb-8 space-y-4">
+        {/* Stats row */}
+        <div className="grid grid-cols-5 gap-4">
+          <div className={`col-span-1 ${cardCls} flex flex-col justify-between`}>
+            <p className={labelCls}>Fill-Ups</p>
+            <div>
+              <p className="text-[40px] font-bold text-gray-900 dark:text-white leading-none tracking-tight mt-3">
+                {allLogs.length}
+              </p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">total entries</p>
+            </div>
+          </div>
 
-      {/* Logs table */}
-      {!logs || logs.length === 0 ? (
-        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
-          <p className="text-lg font-medium mb-1">No fill-ups logged yet</p>
-          <p className="text-sm">Add your first fill-up above.</p>
+          <div className={`col-span-3 ${cardCls}`}>
+            <FuelCostChart monthly={monthlyData} yearly={yearlyData} />
+          </div>
+
+          <div className={`col-span-1 ${cardCls} flex flex-col justify-between`}>
+            <p className={labelCls}>Avg km/L</p>
+            <div>
+              {avgEfficiency !== null ? (
+                <>
+                  <p className="text-[40px] font-bold text-gray-900 dark:text-white leading-none tracking-tight mt-3">
+                    {avgEfficiency.toFixed(1)}
+                  </p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+                    €{allLogs.length > 0 ? (totalCost / allLogs.length).toFixed(2) : "—"} avg/fill
+                  </p>
+                </>
+              ) : (
+                <p className="text-3xl font-bold text-gray-200 dark:text-gray-700 leading-none mt-3">—</p>
+              )}
+            </div>
+          </div>
         </div>
-      ) : (
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Date</th>
-                <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Odometer</th>
-                <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Liters</th>
-                <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Cost</th>
-                <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">€/L</th>
-                <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">km/L</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((log, i) => (
-                <FuelLogRow
-                  key={log.id}
-                  log={log}
-                  licensePlate={licensePlate}
-                  index={i}
-                  efficiency={efficiencyById[log.id] ?? null}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </main>
+
+        {/* Sortable table */}
+        <FuelTable logs={allLogs} efficiencyById={efficiencyById} licensePlate={licensePlate} />
+      </div>
+    </div>
   )
 }

@@ -26,7 +26,8 @@ export async function addMaintenanceLog(vehicleId: string, licensePlate: string,
 
   if (error) throw new Error(error.message)
 
-  revalidatePath(`/vehicles/${encodeURIComponent(licensePlate)}/maintenance`)
+  revalidatePath(`/vehicle/${encodeURIComponent(licensePlate)}/maintenance`)
+  revalidatePath("/")
 }
 
 export async function updateMaintenanceLog(id: string, licensePlate: string, formData: FormData) {
@@ -48,7 +49,8 @@ export async function updateMaintenanceLog(id: string, licensePlate: string, for
 
   if (error) throw new Error(error.message)
 
-  revalidatePath(`/vehicles/${encodeURIComponent(licensePlate)}/maintenance`)
+  revalidatePath(`/vehicle/${encodeURIComponent(licensePlate)}/maintenance`)
+  revalidatePath("/")
 }
 
 export async function deleteMaintenanceLog(id: string, licensePlate: string) {
@@ -64,5 +66,6 @@ export async function deleteMaintenanceLog(id: string, licensePlate: string) {
 
   if (error) throw new Error(error.message)
 
-  revalidatePath(`/vehicles/${encodeURIComponent(licensePlate)}/maintenance`)
+  revalidatePath(`/vehicle/${encodeURIComponent(licensePlate)}/maintenance`)
+  revalidatePath("/")
 }
