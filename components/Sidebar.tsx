@@ -26,11 +26,13 @@ export default async function Sidebar() {
     : "/new-vehicle"
 
   return (
-    <aside className="w-[220px] min-h-screen bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 z-20">
+    <aside className="w-[220px] min-h-screen bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex flex-col">
       {/* Logo */}
       <div className="px-5 py-5 flex items-center gap-2.5">
-        <Image src="/petro_app_icon.png" alt="" width={26} height={26} className="rounded-lg" />
-        <span className="text-gray-900 font-semibold text-[15px] tracking-tight">Petro</span>
+        <div className="rounded-lg overflow-hidden flex-shrink-0 bg-white">
+          <Image src="/petro_app_icon.png" alt="" width={26} height={26} />
+        </div>
+        <span className="text-gray-900 dark:text-white font-semibold text-[15px] tracking-tight">Petro</span>
       </div>
 
       {/* Nav links */}

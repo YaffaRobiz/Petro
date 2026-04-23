@@ -40,19 +40,21 @@ export type MaintenanceLog = {
   date: string
   odometer: number
   service_type: string
+  category: string | null
   notes: string | null
   cost: number
   created_at: string
 }
 
-export const SERVICE_TYPES = [
-  "Oil Change",
-  "Tire Rotation",
-  "Brake Service",
-  "Battery",
-  "Air Filter",
-  "General Inspection",
-  "Other",
-] as const
-
-export type ServiceType = (typeof SERVICE_TYPES)[number]
+export type ServiceTask = {
+  id: string
+  user_id: string
+  vehicle_id: string
+  category: string
+  service_type: string | null
+  expected_odometer: number | null
+  due_date: string | null
+  notes: string | null
+  completed_log_id: string | null
+  created_at: string
+}
