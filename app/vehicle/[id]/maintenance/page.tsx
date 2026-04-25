@@ -1,8 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect, notFound } from "next/navigation"
-import Link from "next/link"
-import AddMaintenanceForm from "./AddMaintenanceForm"
-import MaintenanceLogRow from "./MaintenanceLogRow"
+import NewMaintenanceModal, { type LastServicedMap } from "@/components/NewMaintenanceModal"
+import TasksTable from "./TasksTable"
 
 export default async function MaintenanceLogPage({
   params,
@@ -18,97 +17,97 @@ export default async function MaintenanceLogPage({
 
   const { data: vehicle } = await supabase
     .from("vehicles")
-    .select("id, make, model, nickname, license_plate")
+    .select("id, make, model, nickname, license_plate, initial_odometer")
     .eq("license_plate", licensePlate)
     .eq("user_id", user.id)
     .single()
 
   if (!vehicle) notFound()
 
-  const { data: logs } = await supabase
-    .from("maintenance_logs")
-    .select("*")
-    .eq("vehicle_id", vehicle.id)
-    .order("date", { ascending: false })
+  const [tasksRes, fuelRes, maintRes] = await Promise.all([
+    supabase.from("service_tasks").select("*").eq("vehicle_id", vehicle.id).order("created_at", { ascending: false }),
+    supabase.from("fuel_logs").select("odometer").eq("vehicle_id", vehicle.id).order("odometer", { ascending: false }).limit(1).single(),
+    supabase.from("maintenance_logs").select("id, odometer, service_type, date, notes, cost").eq("vehicle_id", vehicle.id).order("date", { ascending: false }),
+  ])
 
-  const totalServices = logs?.length ?? 0
-  const totalCost = logs?.reduce((sum, l) => sum + Number(l.cost), 0) ?? 0
-  const avgCost = totalServices > 0 ? totalCost / totalServices : 0
-  const lastService = logs?.[0]
-    ? new Date(logs[0].date).toLocaleDateString("en-GB")
-    : null
+  const tasks     = tasksRes.data ?? []
+  const maintLogs = maintRes.data ?? []
 
-  const vehicleName = vehicle.nickname || `${vehicle.make} ${vehicle.model}`
+  const currentOdometer = Math.max(
+    vehicle.initial_odometer,
+    fuelRes.data?.odometer ?? 0,
+    ...maintLogs.map(l => Number(l.odometer)),
+  )
+
+  const lastServicedByType: LastServicedMap = {}
+  for (const log of maintLogs) {
+    if (log.service_type && !lastServicedByType[log.service_type]) {
+      lastServicedByType[log.service_type] = { date: log.date, odometer: Number(log.odometer) }
+    }
+  }
+
+  const logInfoById: Record<string, { date: string; cost: number; odometer: number; notes: string | null }> = {}
+  for (const log of maintLogs) {
+    logInfoById[log.id] = { date: log.date, cost: Number(log.cost), odometer: Number(log.odometer), notes: log.notes ?? null }
+  }
+
+  const now = new Date()
+  const yearPrefix = `${now.getFullYear()}-`
+
+  const completed   = tasks.filter(t => t.completed_log_id).length
+  const overdue     = tasks.filter(t => {
+    if (t.completed_log_id) return false
+    if (t.due_date) return new Date(t.due_date) < now
+    if (t.expected_odometer !== null) return t.expected_odometer < currentOdometer
+    return false
+  }).length
+  const dueSoon     = tasks.filter(t => {
+    if (t.completed_log_id) return false
+    if (t.due_date) { const d = Math.floor((new Date(t.due_date).getTime() - now.getTime()) / 86400000); return d >= 0 && d <= 30 }
+    if (t.expected_odometer !== null) { const km = t.expected_odometer - currentOdometer; return km > 0 && km <= 1000 }
+    return false
+  }).length
+  const totalCostYTD = maintLogs.filter(l => l.date.startsWith(yearPrefix)).reduce((s, l) => s + Number(l.cost ?? 0), 0)
+
+  const cardCls = "bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6"
+  const labelCls = "text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest"
 
   return (
-    <main className="w-full px-6 py-8">
-      <div className="mb-6">
-        <Link
-          href={`/vehicle/${encodeURIComponent(licensePlate)}`}
-          className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-        >
-          ← {vehicleName}
-        </Link>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-2">Maintenance Logs</h1>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">Services</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{totalServices}</p>
+    <div className="flex flex-col min-h-screen">
+      <div className="flex items-start justify-between px-8 pt-8 pb-5">
+        <div>
+          <h1 className="text-[22px] font-semibold text-gray-900 dark:text-white leading-tight">Maintenance</h1>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
+            {vehicle.nickname || `${vehicle.make} ${vehicle.model}`}
+          </p>
         </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total Cost</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">€{totalCost.toFixed(2)}</p>
-        </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">Avg per Service</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">€{avgCost.toFixed(2)}</p>
-        </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">Last Service</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{lastService ?? "—"}</p>
+        <div className="pt-1">
+          <NewMaintenanceModal vehicleId={vehicle.id} licensePlate={licensePlate} currentOdometer={currentOdometer} lastServicedByType={lastServicedByType} />
         </div>
       </div>
 
-      {/* Add form */}
-      <div className="mb-6">
-        <AddMaintenanceForm vehicleId={vehicle.id} licensePlate={licensePlate} />
-      </div>
+      <div className="px-8 pb-8 space-y-4">
+        <div className="grid grid-cols-4 gap-4">
+          <div className={cardCls}>
+            <p className={labelCls}>Due Soon</p>
+            <p className="text-[40px] font-bold text-gray-900 dark:text-white leading-none tracking-tight mt-3">{dueSoon}</p>
+          </div>
+          <div className={cardCls}>
+            <p className={labelCls}>Overdue</p>
+            <p className={`text-[40px] font-bold leading-none tracking-tight mt-3 ${overdue > 0 ? "text-red-500 dark:text-red-400" : "text-gray-900 dark:text-white"}`}>{overdue}</p>
+          </div>
+          <div className={cardCls}>
+            <p className={labelCls}>Completed</p>
+            <p className="text-[40px] font-bold text-gray-900 dark:text-white leading-none tracking-tight mt-3">{completed}</p>
+          </div>
+          <div className={cardCls}>
+            <p className={labelCls}>Total Cost YTD</p>
+            <p className="text-[40px] font-bold text-gray-900 dark:text-white leading-none tracking-tight mt-3">€{totalCostYTD.toFixed(0)}</p>
+          </div>
+        </div>
 
-      {/* Logs table */}
-      {!logs || logs.length === 0 ? (
-        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
-          <p className="text-lg font-medium mb-1">No services logged yet</p>
-          <p className="text-sm">Add your first service entry above.</p>
-        </div>
-      ) : (
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Date</th>
-                <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Odometer</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Service</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Notes</th>
-                <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Cost</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((log, i) => (
-                <MaintenanceLogRow
-                  key={log.id}
-                  log={log}
-                  licensePlate={licensePlate}
-                  index={i}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </main>
+        <TasksTable tasks={tasks} currentOdometer={currentOdometer} vehicleId={vehicle.id} licensePlate={licensePlate} lastServicedByType={lastServicedByType} logInfoById={logInfoById} />
+      </div>
+    </div>
   )
 }
