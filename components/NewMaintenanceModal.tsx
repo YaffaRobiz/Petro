@@ -15,18 +15,10 @@ const labelCls = "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-
 const readonlyCls = `${inputCls} bg-gray-50 dark:bg-gray-800/50 text-gray-400 dark:text-gray-500 cursor-not-allowed`
 
 function CategoryServiceFields({
-  category,
-  serviceType,
-  customService,
-  lastServicedByType,
-  onCategoryChange,
-  onServiceTypeChange,
-  onCustomServiceChange,
-  showLastServiced,
+  category, serviceType, customService, lastServicedByType,
+  onCategoryChange, onServiceTypeChange, onCustomServiceChange, showLastServiced,
 }: {
-  category: string
-  serviceType: string
-  customService: string
+  category: string; serviceType: string; customService: string
   lastServicedByType: LastServicedMap
   onCategoryChange: (v: string) => void
   onServiceTypeChange: (v: string) => void
@@ -83,10 +75,7 @@ function CategoryServiceFields({
 }
 
 export default function NewMaintenanceModal({
-  vehicleId,
-  licensePlate,
-  currentOdometer,
-  lastServicedByType,
+  vehicleId, licensePlate, currentOdometer, lastServicedByType,
 }: {
   vehicleId: string
   licensePlate: string
@@ -100,13 +89,13 @@ export default function NewMaintenanceModal({
   const futureRef = useRef<HTMLFormElement>(null)
   const pastRef   = useRef<HTMLFormElement>(null)
 
-  // ── Future tab state ─────────────────────────────────────────
+  // Future tab state
   const [category, setCategory]           = useState("")
   const [serviceType, setServiceType]     = useState("")
   const [customService, setCustomService] = useState("")
   const [dueKm, setDueKm]                = useState("")
 
-  // ── Past tab state ───────────────────────────────────────────
+  // Past tab state
   const [pCat, setPCat]           = useState("")
   const [pType, setPType]         = useState("")
   const [pCustom, setPCustom]     = useState("")
@@ -142,13 +131,9 @@ export default function NewMaintenanceModal({
   }, [open])
 
   function handleClose() {
-    setOpen(false)
-    setError(null)
-    setOdoError(null)
+    setOpen(false); setError(null); setOdoError(null)
     setOdoBounds({ min: null, max: null })
-    // reset future
     setCategory(""); setServiceType(""); setCustomService(""); setDueKm("")
-    // reset past
     setPCat(""); setPType(""); setPCustom(""); setPDate(""); setPOdo(""); setPCost(""); setPNotes("")
     futureRef.current?.reset()
     pastRef.current?.reset()
@@ -182,24 +167,16 @@ export default function NewMaintenanceModal({
   function handleFutureSubmit(formData: FormData) {
     setError(null)
     startTransition(async () => {
-      try {
-        await createServiceTask(vehicleId, licensePlate, formData)
-        handleClose()
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Something went wrong")
-      }
+      try { await createServiceTask(vehicleId, licensePlate, formData); handleClose() }
+      catch (e) { setError(e instanceof Error ? e.message : "Something went wrong") }
     })
   }
 
   function handlePastSubmit(formData: FormData) {
     setError(null)
     startTransition(async () => {
-      try {
-        await logPastService(vehicleId, licensePlate, formData)
-        handleClose()
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Something went wrong")
-      }
+      try { await logPastService(vehicleId, licensePlate, formData); handleClose() }
+      catch (e) { setError(e instanceof Error ? e.message : "Something went wrong") }
     })
   }
 
@@ -212,9 +189,7 @@ export default function NewMaintenanceModal({
 
   const odoPlaceholder = odoBounds.min !== null && odoBounds.max !== null
     ? `${odoBounds.min.toLocaleString("en-US")}–${odoBounds.max.toLocaleString("en-US")}`
-    : odoBounds.min !== null
-    ? `≥ ${odoBounds.min.toLocaleString("en-US")}`
-    : "e.g. 48500"
+    : odoBounds.min !== null ? `≥ ${odoBounds.min.toLocaleString("en-US")}` : "e.g. 48500"
 
   return (
     <>
@@ -230,17 +205,13 @@ export default function NewMaintenanceModal({
           <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={handleClose} />
 
           <div className="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 p-6 max-h-[90vh] overflow-y-auto">
-            {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-[15px] font-semibold text-gray-900 dark:text-white">New Service</h2>
               <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Close">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 6 6 18M6 6l12 12" />
-                </svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
               </button>
             </div>
 
-            {/* Tabs */}
             <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-5">
               <button type="button" onClick={() => { setTab("future"); setError(null) }} className={tabCls("future")}>Future service</button>
               <button type="button" onClick={() => { setTab("past"); setError(null) }} className={tabCls("past")}>Past service</button>
@@ -252,12 +223,8 @@ export default function NewMaintenanceModal({
               </div>
             )}
 
-            {/* ── FUTURE TAB ────────────────────────────────── */}
-            <form
-              ref={futureRef}
-              action={handleFutureSubmit}
-              className={`space-y-4 ${tab !== "future" ? "hidden" : ""}`}
-            >
+            {/* FUTURE TAB */}
+            <form ref={futureRef} action={handleFutureSubmit} className={`space-y-4 ${tab !== "future" ? "hidden" : ""}`}>
               <CategoryServiceFields
                 category={category} serviceType={serviceType} customService={customService}
                 lastServicedByType={lastServicedByType}
@@ -305,12 +272,8 @@ export default function NewMaintenanceModal({
               </div>
             </form>
 
-            {/* ── PAST TAB ──────────────────────────────────── */}
-            <form
-              ref={pastRef}
-              action={handlePastSubmit}
-              className={`space-y-4 ${tab !== "past" ? "hidden" : ""}`}
-            >
+            {/* PAST TAB */}
+            <form ref={pastRef} action={handlePastSubmit} className={`space-y-4 ${tab !== "past" ? "hidden" : ""}`}>
               <CategoryServiceFields
                 category={pCat} serviceType={pType} customService={pCustom}
                 lastServicedByType={lastServicedByType}
@@ -355,11 +318,8 @@ export default function NewMaintenanceModal({
                     </span>
                   </label>
                   <input
-                    name="odometer"
-                    type="number"
-                    required
-                    min={odoBounds.min ?? 0}
-                    max={odoBounds.max ?? undefined}
+                    name="odometer" type="number" required
+                    min={odoBounds.min ?? 0} max={odoBounds.max ?? undefined}
                     placeholder={odoPlaceholder}
                     value={pOdo}
                     onChange={e => { setPOdo(e.target.value); validateOdo(parseInt(e.target.value)) }}

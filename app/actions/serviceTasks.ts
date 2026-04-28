@@ -68,7 +68,7 @@ export async function logService(
   const cost    = parseFloat(formData.get("cost") as string)
   const notes   = (formData.get("notes") as string) || null
   const isInspection = category === INSPECTION_CATEGORY_ID
-  const odometer = isInspection ? 0 : parseInt(formData.get("odometer") as string)
+  const odometer = isInspection ? null : parseInt(formData.get("odometer") as string)
 
   const { data: log, error: logError } = await supabase
     .from("maintenance_logs")

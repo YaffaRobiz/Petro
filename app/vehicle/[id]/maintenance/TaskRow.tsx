@@ -26,7 +26,12 @@ function getStatus(task: ServiceTask, currentOdometer: number): Status {
 }
 
 function StatusDot({ status }: { status: Status }) {
-  const color = { completed: "bg-green-500", overdue: "bg-red-500", due_soon: "bg-orange-400", ok: "bg-gray-300 dark:bg-gray-600" }[status]
+  const color = {
+    completed: "bg-green-500",
+    overdue:   "bg-red-500",
+    due_soon:  "bg-orange-400",
+    ok:        "bg-gray-300 dark:bg-gray-600",
+  }[status]
   return <span className={`w-2 h-2 rounded-full flex-shrink-0 mt-1 ${color}`} />
 }
 
@@ -55,7 +60,7 @@ function LogServiceModal({ task, vehicleId, licensePlate, currentOdometer, onClo
   task: ServiceTask; vehicleId: string; licensePlate: string; currentOdometer: number; onClose: () => void
 }) {
   const [isPending, startTransition] = useTransition()
-  const [error, setError]   = useState<string | null>(null)
+  const [error, setError]     = useState<string | null>(null)
   const [odoError, setOdoError] = useState<string | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
   const isInspection = task.category === INSPECTION_CATEGORY_ID
@@ -77,12 +82,19 @@ function LogServiceModal({ task, vehicleId, licensePlate, currentOdometer, onClo
   function handleSubmit(formData: FormData) {
     if (!isInspection) {
       const odo = parseFloat(formData.get("odometer") as string)
-      if (odo <= currentOdometer) { setOdoError(`Must be greater than current odometer (${currentOdometer.toLocaleString("en-US")} km)`); return }
+      if (odo <= currentOdometer) {
+        setOdoError(`Must be greater than current odometer (${currentOdometer.toLocaleString("en-US")} km)`)
+        return
+      }
     }
     setError(null); setOdoError(null)
     startTransition(async () => {
-      try { await logService(task.id, vehicleId, licensePlate, task.category, task.service_type, formData); onClose() }
-      catch (e) { setError(e instanceof Error ? e.message : "Something went wrong") }
+      try {
+        await logService(task.id, vehicleId, licensePlate, task.category, task.service_type, formData)
+        onClose()
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Something went wrong")
+      }
     })
   }
 
@@ -99,17 +111,21 @@ function LogServiceModal({ task, vehicleId, licensePlate, currentOdometer, onClo
             <h2 className="text-[15px] font-semibold text-gray-900 dark:text-white">Log Service</h2>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{task.service_type ?? "Other"}</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Close">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Close">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
           </button>
         </div>
         {error && <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm rounded-lg px-4 py-3 mb-4">{error}</div>}
         <form ref={formRef} action={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <div><label className={labelCls}>Date <span className="text-red-500">*</span></label>
-              <input name="date" type="date" required defaultValue={today} className={inputCls} /></div>
-            <div><label className={labelCls}>Cost (€) <span className="text-red-500">*</span></label>
-              <input name="cost" type="number" required min={0} step="0.01" placeholder="120.00" className={inputCls} /></div>
+            <div>
+              <label className={labelCls}>Date <span className="text-red-500">*</span></label>
+              <input name="date" type="date" required defaultValue={today} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Cost (€) <span className="text-red-500">*</span></label>
+              <input name="cost" type="number" required min={0} step="0.01" placeholder="120.00" className={inputCls} />
+            </div>
           </div>
           {!isInspection && (
             <div>
@@ -120,14 +136,18 @@ function LogServiceModal({ task, vehicleId, licensePlate, currentOdometer, onClo
               {odoError && <p className="mt-1 text-xs text-red-500">{odoError}</p>}
             </div>
           )}
-          <div><label className={labelCls}>Notes</label>
-            <textarea name="notes" rows={2} placeholder="Optional…" className={`${inputCls} resize-none`} /></div>
+          <div>
+            <label className={labelCls}>Notes</label>
+            <textarea name="notes" rows={2} placeholder="Optional…" className={`${inputCls} resize-none`} />
+          </div>
           <div className="flex gap-3 pt-1">
             <button type="submit" disabled={isPending || !!odoError}
               className="flex-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium py-2 rounded-full hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               {isPending ? "Saving…" : "Confirm"}
             </button>
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-600 border border-gray-200 dark:border-gray-700 rounded-full transition-colors">Cancel</button>
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-full transition-colors">
+              Cancel
+            </button>
           </div>
         </form>
       </div>
@@ -136,16 +156,20 @@ function LogServiceModal({ task, vehicleId, licensePlate, currentOdometer, onClo
 }
 
 export default function TaskRow({ task, currentOdometer, vehicleId, licensePlate, lastServiced, logInfo }: {
-  task: ServiceTask; currentOdometer: number; vehicleId: string; licensePlate: string
-  lastServiced: LastServiced; logInfo: { date: string; cost: number; odometer: number; notes: string | null } | null
+  task: ServiceTask
+  currentOdometer: number
+  vehicleId: string
+  licensePlate: string
+  lastServiced: LastServiced
+  logInfo: { date: string; cost: number; odometer: number; notes: string | null } | null
 }) {
-  const [expanded, setExpanded]             = useState(false)
-  const [editing, setEditing]               = useState(false)
-  const [logOpen, setLogOpen]               = useState(false)
-  const [confirming, setConfirming]         = useState(false)
-  const [isPending, startTransition]        = useTransition()
-  const [editPending, startEditTransition]  = useTransition()
-  const [editError, setEditError]           = useState<string | null>(null)
+  const [expanded, setExpanded]            = useState(false)
+  const [editing, setEditing]              = useState(false)
+  const [logOpen, setLogOpen]              = useState(false)
+  const [confirming, setConfirming]        = useState(false)
+  const [isPending, startTransition]       = useTransition()
+  const [editPending, startEditTransition] = useTransition()
+  const [editError, setEditError]          = useState<string | null>(null)
 
   const status       = getStatus(task, currentOdometer)
   const isOther      = task.category === OTHER_CATEGORY_ID
@@ -160,9 +184,14 @@ export default function TaskRow({ task, currentOdometer, vehicleId, licensePlate
 
   return (
     <>
-      {logOpen && <LogServiceModal task={task} vehicleId={vehicleId} licensePlate={licensePlate} currentOdometer={currentOdometer} onClose={() => setLogOpen(false)} />}
+      {logOpen && (
+        <LogServiceModal task={task} vehicleId={vehicleId} licensePlate={licensePlate} currentOdometer={currentOdometer} onClose={() => setLogOpen(false)} />
+      )}
       <div className="border-b border-gray-50 dark:border-gray-800 last:border-0">
-        <div className="flex items-center gap-3 px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors cursor-pointer" onClick={() => setExpanded(e => !e)}>
+        <div
+          className="flex items-center gap-3 px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors cursor-pointer"
+          onClick={() => setExpanded(e => !e)}
+        >
           <StatusDot status={status} />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
@@ -176,8 +205,8 @@ export default function TaskRow({ task, currentOdometer, vehicleId, licensePlate
               </p>
             ) : !isOther && (
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                {categoryLabel} · (Last: {lastServicedText})
-                {task.expected_odometer !== null && ` · Expected at ${task.expected_odometer.toLocaleString("en-US")} km`}
+                {categoryLabel} · Last: {lastServicedText}
+                {task.expected_odometer !== null && ` · expected at ${task.expected_odometer.toLocaleString("en-US")} km`}
                 {task.due_date && ` · due ${new Date(task.due_date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`}
               </p>
             )}
@@ -185,7 +214,8 @@ export default function TaskRow({ task, currentOdometer, vehicleId, licensePlate
           <div className="flex items-center gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
             <DueBadge task={task} currentOdometer={currentOdometer} status={status} />
             {status !== "completed" && (
-              <button onClick={() => setLogOpen(true)} className="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-lg transition-colors">
+              <button onClick={() => setLogOpen(true)}
+                className="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-lg transition-colors">
                 Log service
               </button>
             )}
@@ -206,35 +236,52 @@ export default function TaskRow({ task, currentOdometer, vehicleId, licensePlate
             </div>
 
             {editing && status !== "completed" && (
-              <form action={(fd) => { setEditError(null); startEditTransition(async () => { try { await updateServiceTask(task.id, licensePlate, fd); setEditing(false) } catch (e) { setEditError(e instanceof Error ? e.message : "Something went wrong") } }) }} className="space-y-2 pt-1">
+              <form
+                action={(fd) => {
+                  setEditError(null)
+                  startEditTransition(async () => {
+                    try { await updateServiceTask(task.id, licensePlate, fd); setEditing(false) }
+                    catch (e) { setEditError(e instanceof Error ? e.message : "Something went wrong") }
+                  })
+                }}
+                className="space-y-2 pt-1"
+              >
                 {isOther && (
                   <div>
                     <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Service Name</label>
-                    <input name="service_type" type="text" defaultValue={task.service_type ?? ""} required className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
+                    <input name="service_type" type="text" defaultValue={task.service_type ?? ""} required
+                      className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
                   </div>
                 )}
                 {task.expected_odometer !== null && (
                   <div>
                     <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Expected at (km)</label>
-                    <input name="expected_odometer" type="number" defaultValue={task.expected_odometer} min={currentOdometer + 1} required className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
+                    <input name="expected_odometer" type="number" defaultValue={task.expected_odometer} min={currentOdometer + 1} required
+                      className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
                   </div>
                 )}
                 {task.due_date && (
                   <div>
                     <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Due Date</label>
-                    <input name="due_date" type="date" defaultValue={task.due_date} required className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
+                    <input name="due_date" type="date" defaultValue={task.due_date} required
+                      className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
                   </div>
                 )}
                 <div>
                   <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Notes</label>
-                  <textarea name="notes" rows={2} defaultValue={task.notes ?? ""} placeholder="Optional…" className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 resize-none" />
+                  <textarea name="notes" rows={2} defaultValue={task.notes ?? ""} placeholder="Optional…"
+                    className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 resize-none" />
                 </div>
                 {editError && <p className="text-xs text-red-500">{editError}</p>}
                 <div className="flex gap-2 pt-1">
-                  <button type="submit" disabled={editPending} className="text-xs font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-3 py-1.5 rounded-full hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors disabled:opacity-50">
+                  <button type="submit" disabled={editPending}
+                    className="text-xs font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-3 py-1.5 rounded-full hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors disabled:opacity-50">
                     {editPending ? "Saving…" : "Save"}
                   </button>
-                  <button type="button" onClick={() => { setEditing(false); setEditError(null) }} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">Cancel</button>
+                  <button type="button" onClick={() => { setEditing(false); setEditError(null) }}
+                    className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                    Cancel
+                  </button>
                 </div>
               </form>
             )}
@@ -242,16 +289,25 @@ export default function TaskRow({ task, currentOdometer, vehicleId, licensePlate
             {!editing && (
               <div className="flex items-center justify-end gap-3 pt-1">
                 {status !== "completed" && (
-                  <button onClick={() => setEditing(true)} className="text-xs font-medium text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-lg transition-colors">Edit</button>
+                  <button onClick={() => setEditing(true)}
+                    className="text-xs font-medium text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-lg transition-colors">
+                    Edit
+                  </button>
                 )}
                 {confirming ? (
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-gray-400">Delete?</span>
-                    <button onClick={() => startTransition(() => deleteServiceTask(task.id, licensePlate))} disabled={isPending} className="text-xs text-red-500 hover:text-red-600 font-medium disabled:opacity-50">{isPending ? "…" : "Yes"}</button>
+                    <button onClick={() => startTransition(() => deleteServiceTask(task.id, licensePlate))} disabled={isPending}
+                      className="text-xs text-red-500 hover:text-red-600 font-medium disabled:opacity-50">
+                      {isPending ? "…" : "Yes"}
+                    </button>
                     <button onClick={() => setConfirming(false)} className="text-xs text-gray-400 hover:text-gray-600">No</button>
                   </div>
                 ) : (
-                  <button onClick={() => setConfirming(true)} className="text-xs font-medium text-red-400 hover:text-red-500 border border-red-200 dark:border-red-900 px-3 py-1.5 rounded-lg transition-colors">Delete</button>
+                  <button onClick={() => setConfirming(true)}
+                    className="text-xs font-medium text-red-400 hover:text-red-500 border border-red-200 dark:border-red-900 px-3 py-1.5 rounded-lg transition-colors">
+                    Delete
+                  </button>
                 )}
               </div>
             )}

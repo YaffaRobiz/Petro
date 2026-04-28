@@ -3,6 +3,7 @@ import { Geist } from "next/font/google"
 import { headers } from "next/headers"
 import { ThemeProvider } from "@/components/ThemeProvider"
 import Sidebar from "@/components/Sidebar"
+import AppShell from "@/components/AppShell"
 import "./globals.css"
 
 const geist = Geist({ subsets: ["latin"] })
@@ -32,12 +33,9 @@ export default async function RootLayout({
       <body className={`${geist.className} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {showSidebar ? (
-            <div className="flex min-h-screen">
-              <Sidebar />
-              <div className="ml-[220px] flex-1 min-h-screen bg-[#f0efe8] dark:bg-gray-950 text-gray-900 dark:text-gray-100">
-                {children}
-              </div>
-            </div>
+            <AppShell sidebar={<Sidebar />}>
+              {children}
+            </AppShell>
           ) : (
             <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
               {children}

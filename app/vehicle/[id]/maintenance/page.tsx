@@ -54,20 +54,22 @@ export default async function MaintenanceLogPage({
   const now = new Date()
   const yearPrefix = `${now.getFullYear()}-`
 
-  const completed   = tasks.filter(t => t.completed_log_id).length
-  const overdue     = tasks.filter(t => {
+  const completed = tasks.filter(t => t.completed_log_id).length
+  const overdue   = tasks.filter(t => {
     if (t.completed_log_id) return false
     if (t.due_date) return new Date(t.due_date) < now
     if (t.expected_odometer !== null) return t.expected_odometer < currentOdometer
     return false
   }).length
-  const dueSoon     = tasks.filter(t => {
+  const dueSoon = tasks.filter(t => {
     if (t.completed_log_id) return false
     if (t.due_date) { const d = Math.floor((new Date(t.due_date).getTime() - now.getTime()) / 86400000); return d >= 0 && d <= 30 }
     if (t.expected_odometer !== null) { const km = t.expected_odometer - currentOdometer; return km > 0 && km <= 1000 }
     return false
   }).length
-  const totalCostYTD = maintLogs.filter(l => l.date.startsWith(yearPrefix)).reduce((s, l) => s + Number(l.cost ?? 0), 0)
+  const totalCostYTD = maintLogs
+    .filter(l => l.date.startsWith(yearPrefix))
+    .reduce((s, l) => s + Number(l.cost ?? 0), 0)
 
   const cardCls = "bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6"
   const labelCls = "text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest"
@@ -82,7 +84,12 @@ export default async function MaintenanceLogPage({
           </p>
         </div>
         <div className="pt-1">
-          <NewMaintenanceModal vehicleId={vehicle.id} licensePlate={licensePlate} currentOdometer={currentOdometer} lastServicedByType={lastServicedByType} />
+          <NewMaintenanceModal
+            vehicleId={vehicle.id}
+            licensePlate={licensePlate}
+            currentOdometer={currentOdometer}
+            lastServicedByType={lastServicedByType}
+          />
         </div>
       </div>
 
@@ -106,7 +113,14 @@ export default async function MaintenanceLogPage({
           </div>
         </div>
 
-        <TasksTable tasks={tasks} currentOdometer={currentOdometer} vehicleId={vehicle.id} licensePlate={licensePlate} lastServicedByType={lastServicedByType} logInfoById={logInfoById} />
+        <TasksTable
+          tasks={tasks}
+          currentOdometer={currentOdometer}
+          vehicleId={vehicle.id}
+          licensePlate={licensePlate}
+          lastServicedByType={lastServicedByType}
+          logInfoById={logInfoById}
+        />
       </div>
     </div>
   )
