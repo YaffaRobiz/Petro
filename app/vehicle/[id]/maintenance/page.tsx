@@ -33,19 +33,12 @@ export default async function MaintenanceLogPage({
   const tasks     = tasksRes.data ?? []
   const maintLogs = maintRes.data ?? []
 
-  // Map completed_log_id → log info for expanded row display
-  const logInfoById: Record<string, { date: string; cost: number; notes: string | null }> = {}
-  for (const log of maintLogs) {
-    logInfoById[log.id] = { date: log.date, cost: Number(log.cost), notes: log.notes ?? null }
-  }
-
   const currentOdometer = Math.max(
     vehicle.initial_odometer,
     fuelRes.data?.odometer ?? 0,
     ...maintLogs.map(l => Number(l.odometer)),
   )
 
-  // Build last-serviced map: service_type → most recent log
   const lastServicedByType: LastServicedMap = {}
   for (const log of maintLogs) {
     if (log.service_type && !lastServicedByType[log.service_type]) {
@@ -53,8 +46,10 @@ export default async function MaintenanceLogPage({
     }
   }
 
-  const cardCls = "bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6"
-  const labelCls = "text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest"
+  const logInfoById: Record<string, { date: string; cost: number; odometer: number; notes: string | null }> = {}
+  for (const log of maintLogs) {
+    logInfoById[log.id] = { date: log.date, cost: Number(log.cost), odometer: Number(log.odometer), notes: log.notes ?? null }
+  }
 
   const now = new Date()
   const yearPrefix = `${now.getFullYear()}-`
@@ -66,21 +61,18 @@ export default async function MaintenanceLogPage({
     if (t.expected_odometer !== null) return t.expected_odometer < currentOdometer
     return false
   }).length
-  const dueSoon   = tasks.filter(t => {
+  const dueSoon = tasks.filter(t => {
     if (t.completed_log_id) return false
-    if (t.due_date) {
-      const days = Math.floor((new Date(t.due_date).getTime() - now.getTime()) / 86400000)
-      return days >= 0 && days <= 30
-    }
-    if (t.expected_odometer !== null) {
-      const km = t.expected_odometer - currentOdometer
-      return km > 0 && km <= 1000
-    }
+    if (t.due_date) { const d = Math.floor((new Date(t.due_date).getTime() - now.getTime()) / 86400000); return d >= 0 && d <= 30 }
+    if (t.expected_odometer !== null) { const km = t.expected_odometer - currentOdometer; return km > 0 && km <= 1000 }
     return false
   }).length
   const totalCostYTD = maintLogs
     .filter(l => l.date.startsWith(yearPrefix))
     .reduce((s, l) => s + Number(l.cost ?? 0), 0)
+
+  const cardCls = "bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6"
+  const labelCls = "text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest"
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -102,7 +94,6 @@ export default async function MaintenanceLogPage({
       </div>
 
       <div className="px-8 pb-8 space-y-4">
-        {/* Stats */}
         <div className="grid grid-cols-4 gap-4">
           <div className={cardCls}>
             <p className={labelCls}>Due Soon</p>
@@ -110,9 +101,7 @@ export default async function MaintenanceLogPage({
           </div>
           <div className={cardCls}>
             <p className={labelCls}>Overdue</p>
-            <p className={`text-[40px] font-bold leading-none tracking-tight mt-3 ${overdue > 0 ? "text-red-500 dark:text-red-400" : "text-gray-900 dark:text-white"}`}>
-              {overdue}
-            </p>
+            <p className={`text-[40px] font-bold leading-none tracking-tight mt-3 ${overdue > 0 ? "text-red-500 dark:text-red-400" : "text-gray-900 dark:text-white"}`}>{overdue}</p>
           </div>
           <div className={cardCls}>
             <p className={labelCls}>Completed</p>

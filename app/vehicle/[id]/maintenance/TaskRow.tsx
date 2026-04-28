@@ -6,7 +6,6 @@ import { INSPECTION_CATEGORY_ID, OTHER_CATEGORY_ID, getCategoryById } from "@/li
 import type { ServiceTask } from "@/lib/types"
 
 type LastServiced = { date: string; odometer: number | null } | null
-
 type Status = "completed" | "overdue" | "due_soon" | "ok"
 
 function getStatus(task: ServiceTask, currentOdometer: number): Status {
@@ -38,47 +37,30 @@ function StatusDot({ status }: { status: Status }) {
 
 function DueBadge({ task, currentOdometer, status }: { task: ServiceTask; currentOdometer: number; status: Status }) {
   if (status === "completed") return null
-
   if (task.due_date) {
     const days = Math.floor((new Date(task.due_date).getTime() - Date.now()) / 86400000)
     const label = days < 0 ? `Overdue · ${Math.abs(days)} days` : `in ${days} days`
-    const cls = status === "overdue"
-      ? "bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-      : status === "due_soon"
-      ? "bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400"
+    const cls = status === "overdue" ? "bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+      : status === "due_soon" ? "bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400"
       : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
     return <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cls}`}>{label}</span>
   }
-
   if (task.expected_odometer !== null) {
     const km = task.expected_odometer - currentOdometer
     const label = km <= 0 ? `Overdue · ${Math.abs(km).toLocaleString("en-US")} km` : `in ${km.toLocaleString("en-US")} km`
-    const cls = status === "overdue"
-      ? "bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-      : status === "due_soon"
-      ? "bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400"
+    const cls = status === "overdue" ? "bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+      : status === "due_soon" ? "bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400"
       : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
     return <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cls}`}>{label}</span>
   }
-
   return null
 }
 
-function LogServiceModal({
-  task,
-  vehicleId,
-  licensePlate,
-  currentOdometer,
-  onClose,
-}: {
-  task: ServiceTask
-  vehicleId: string
-  licensePlate: string
-  currentOdometer: number
-  onClose: () => void
+function LogServiceModal({ task, vehicleId, licensePlate, currentOdometer, onClose }: {
+  task: ServiceTask; vehicleId: string; licensePlate: string; currentOdometer: number; onClose: () => void
 }) {
   const [isPending, startTransition] = useTransition()
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError]     = useState<string | null>(null)
   const [odoError, setOdoError] = useState<string | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
   const isInspection = task.category === INSPECTION_CATEGORY_ID
@@ -94,9 +76,7 @@ function LogServiceModal({
     const val = parseFloat(e.target.value)
     if (!isNaN(val) && val <= currentOdometer) {
       setOdoError(`Must be greater than current odometer (${currentOdometer.toLocaleString("en-US")} km)`)
-    } else {
-      setOdoError(null)
-    }
+    } else setOdoError(null)
   }
 
   function handleSubmit(formData: FormData) {
@@ -107,8 +87,7 @@ function LogServiceModal({
         return
       }
     }
-    setError(null)
-    setOdoError(null)
+    setError(null); setOdoError(null)
     startTransition(async () => {
       try {
         await logService(task.id, vehicleId, licensePlate, task.category, task.service_type, formData)
@@ -133,18 +112,10 @@ function LogServiceModal({
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{task.service_type ?? "Other"}</p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Close">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
           </button>
         </div>
-
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm rounded-lg px-4 py-3 mb-4">
-            {error}
-          </div>
-        )}
-
+        {error && <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm rounded-lg px-4 py-3 mb-4">{error}</div>}
         <form ref={formRef} action={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -156,34 +127,22 @@ function LogServiceModal({
               <input name="cost" type="number" required min={0} step="0.01" placeholder="120.00" className={inputCls} />
             </div>
           </div>
-
           {!isInspection && (
             <div>
               <label className={labelCls}>Odometer (km) <span className="text-red-500">*</span></label>
-              <input
-                name="odometer"
-                type="number"
-                required
-                min={currentOdometer + 1}
+              <input name="odometer" type="number" required min={currentOdometer + 1}
                 placeholder={(currentOdometer + 1).toLocaleString("en-US")}
-                onChange={handleOdoChange}
-                className={odoError ? inputErrCls : inputCls}
-              />
+                onChange={handleOdoChange} className={odoError ? inputErrCls : inputCls} />
               {odoError && <p className="mt-1 text-xs text-red-500">{odoError}</p>}
             </div>
           )}
-
           <div>
             <label className={labelCls}>Notes</label>
             <textarea name="notes" rows={2} placeholder="Optional…" className={`${inputCls} resize-none`} />
           </div>
-
           <div className="flex gap-3 pt-1">
-            <button
-              type="submit"
-              disabled={isPending || !!odoError}
-              className="flex-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium py-2 rounded-full hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <button type="submit" disabled={isPending || !!odoError}
+              className="flex-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium py-2 rounded-full hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               {isPending ? "Saving…" : "Confirm"}
             </button>
             <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-full transition-colors">
@@ -196,31 +155,24 @@ function LogServiceModal({
   )
 }
 
-export default function TaskRow({
-  task,
-  currentOdometer,
-  vehicleId,
-  licensePlate,
-  lastServiced,
-  logInfo,
-}: {
+export default function TaskRow({ task, currentOdometer, vehicleId, licensePlate, lastServiced, logInfo }: {
   task: ServiceTask
   currentOdometer: number
   vehicleId: string
   licensePlate: string
   lastServiced: LastServiced
-  logInfo: { date: string; cost: number; notes: string | null } | null
+  logInfo: { date: string; cost: number; odometer: number; notes: string | null } | null
 }) {
-  const [expanded, setExpanded]         = useState(false)
-  const [editing, setEditing]           = useState(false)
-  const [logOpen, setLogOpen]           = useState(false)
-  const [confirming, setConfirming]     = useState(false)
-  const [isPending, startTransition]    = useTransition()
+  const [expanded, setExpanded]            = useState(false)
+  const [editing, setEditing]              = useState(false)
+  const [logOpen, setLogOpen]              = useState(false)
+  const [confirming, setConfirming]        = useState(false)
+  const [isPending, startTransition]       = useTransition()
   const [editPending, startEditTransition] = useTransition()
-  const [editError, setEditError]       = useState<string | null>(null)
+  const [editError, setEditError]          = useState<string | null>(null)
 
-  const status     = getStatus(task, currentOdometer)
-  const isOther    = task.category === OTHER_CATEGORY_ID
+  const status       = getStatus(task, currentOdometer)
+  const isOther      = task.category === OTHER_CATEGORY_ID
   const isInspection = task.category === INSPECTION_CATEGORY_ID
   const categoryLabel = getCategoryById(task.category)?.label ?? task.category
 
@@ -233,69 +185,49 @@ export default function TaskRow({
   return (
     <>
       {logOpen && (
-        <LogServiceModal
-          task={task}
-          vehicleId={vehicleId}
-          licensePlate={licensePlate}
-          currentOdometer={currentOdometer}
-          onClose={() => setLogOpen(false)}
-        />
+        <LogServiceModal task={task} vehicleId={vehicleId} licensePlate={licensePlate} currentOdometer={currentOdometer} onClose={() => setLogOpen(false)} />
       )}
-
-      <div
-        className="border-b border-gray-50 dark:border-gray-800 last:border-0"
-      >
-        {/* Main row */}
+      <div className="border-b border-gray-50 dark:border-gray-800 last:border-0">
         <div
           className="flex items-center gap-3 px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors cursor-pointer"
           onClick={() => setExpanded(e => !e)}
         >
           <StatusDot status={status} />
-
-          {/* Labels */}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
               {isOther ? `Other · ${task.service_type ?? ""}` : (task.service_type ?? "")}
             </p>
             {status === "completed" && logInfo ? (
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                Completed on {new Date(logInfo.date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })} · €{logInfo.cost.toFixed(2)}
+                Completed on {new Date(logInfo.date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                {!isInspection && logInfo.odometer > 0 && ` · ${logInfo.odometer.toLocaleString("en-US")} km`}
+                {` · €${logInfo.cost.toFixed(2)}`}
               </p>
             ) : !isOther && (
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                 {categoryLabel} · Last: {lastServicedText}
+                {task.expected_odometer !== null && ` · expected at ${task.expected_odometer.toLocaleString("en-US")} km`}
+                {task.due_date && ` · due ${new Date(task.due_date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`}
               </p>
             )}
           </div>
-
-          {/* Due badge + actions */}
           <div className="flex items-center gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
             <DueBadge task={task} currentOdometer={currentOdometer} status={status} />
-
             {status !== "completed" && (
-              <button
-                onClick={() => setLogOpen(true)}
-                className="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-lg transition-colors"
-              >
+              <button onClick={() => setLogOpen(true)}
+                className="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-lg transition-colors">
                 Log service
               </button>
             )}
-
-            <svg
-              width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-              className={`text-gray-300 dark:text-gray-600 transition-transform duration-150 ${expanded ? "rotate-180" : ""}`}
-            >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+              className={`text-gray-300 dark:text-gray-600 transition-transform duration-150 ${expanded ? "rotate-180" : ""}`}>
               <path d="m6 9 6 6 6-6" />
             </svg>
           </div>
         </div>
 
-        {/* Expanded section */}
         {expanded && (
-          <div className="px-5 pb-4 pt-0 space-y-3 border-t border-gray-50 dark:border-gray-800 mt-0">
-
-            {/* Notes */}
+          <div className="px-5 pb-4 pt-0 space-y-3 border-t border-gray-50 dark:border-gray-800">
             <div className="pt-3">
               <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Notes</p>
               {task.notes && <p className="text-sm text-gray-600 dark:text-gray-400">{task.notes}</p>}
@@ -303,18 +235,13 @@ export default function TaskRow({
               {!task.notes && !logInfo?.notes && <p className="text-sm text-gray-400 dark:text-gray-600">—</p>}
             </div>
 
-            {/* Edit form — non-completed only */}
             {editing && status !== "completed" && (
               <form
                 action={(fd) => {
                   setEditError(null)
                   startEditTransition(async () => {
-                    try {
-                      await updateServiceTask(task.id, licensePlate, fd)
-                      setEditing(false)
-                    } catch (e) {
-                      setEditError(e instanceof Error ? e.message : "Something went wrong")
-                    }
+                    try { await updateServiceTask(task.id, licensePlate, fd); setEditing(false) }
+                    catch (e) { setEditError(e instanceof Error ? e.message : "Something went wrong") }
                   })
                 }}
                 className="space-y-2 pt-1"
@@ -359,7 +286,6 @@ export default function TaskRow({
               </form>
             )}
 
-            {/* Action buttons */}
             {!editing && (
               <div className="flex items-center justify-end gap-3 pt-1">
                 {status !== "completed" && (
@@ -371,8 +297,7 @@ export default function TaskRow({
                 {confirming ? (
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-gray-400">Delete?</span>
-                    <button onClick={() => startTransition(() => deleteServiceTask(task.id, licensePlate))}
-                      disabled={isPending}
+                    <button onClick={() => startTransition(() => deleteServiceTask(task.id, licensePlate))} disabled={isPending}
                       className="text-xs text-red-500 hover:text-red-600 font-medium disabled:opacity-50">
                       {isPending ? "…" : "Yes"}
                     </button>

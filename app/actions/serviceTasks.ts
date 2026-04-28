@@ -24,7 +24,6 @@ export async function createServiceTask(vehicleId: string, licensePlate: string,
     const dueKm = parseInt(formData.get("due_km") as string)
     if (isNaN(dueKm) || dueKm <= 0) throw new Error("Due km must be a positive number")
 
-    // Compute expected odometer from current vehicle max
     const [fuelRes, maintRes, vehicleRes] = await Promise.all([
       supabase.from("fuel_logs").select("odometer").eq("vehicle_id", vehicleId).order("odometer", { ascending: false }).limit(1).single(),
       supabase.from("maintenance_logs").select("odometer").eq("vehicle_id", vehicleId).order("odometer", { ascending: false }).limit(1).single(),

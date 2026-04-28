@@ -52,10 +52,10 @@ export const SERVICE_SCHEMA: ServiceCategory[] = [
     id: "engine_performance",
     label: "Engine & Performance",
     services: [
-      { id: "battery",          label: "Battery Replacement" },
-      { id: "engine_diagnostics", label: "Engine Diagnostics" },
-      { id: "serpentine_belt",  label: "Serpentine Belt Replacement" },
-      { id: "timing_belt",      label: "Timing Belt Replacement" },
+      { id: "battery",             label: "Battery Replacement" },
+      { id: "engine_diagnostics",  label: "Engine Diagnostics" },
+      { id: "serpentine_belt",     label: "Serpentine Belt Replacement" },
+      { id: "timing_belt",         label: "Timing Belt Replacement" },
     ],
   },
   {
@@ -72,9 +72,9 @@ export const SERVICE_SCHEMA: ServiceCategory[] = [
     id: "inspections",
     label: "Inspections",
     services: [
-      { id: "general_inspection",    label: "General Inspection" },
+      { id: "general_inspection",     label: "General Inspection" },
       { id: "prepurchase_inspection", label: "Pre-Purchase Inspection" },
-      { id: "safety_inspection",     label: "Safety Inspection" },
+      { id: "safety_inspection",      label: "Safety Inspection" },
     ],
   },
   {
