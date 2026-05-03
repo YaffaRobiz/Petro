@@ -26,7 +26,7 @@ export default async function Sidebar() {
     : "/new-vehicle"
 
   return (
-    <aside className="w-[220px] min-h-screen bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex flex-col">
+    <aside className="w-[220px] min-h-screen bg-white dark:bg-btn-dark border-r border-gray-100 dark:border-gray-800 flex flex-col">
       {/* Logo */}
       <div className="px-5 py-5 flex items-center gap-2.5">
         <div className="rounded-lg overflow-hidden flex-shrink-0 bg-white">

@@ -142,7 +142,7 @@ function LogServiceModal({ task, vehicleId, licensePlate, currentOdometer, onClo
           </div>
           <div className="flex gap-3 pt-1">
             <button type="submit" disabled={isPending || !!odoError}
-              className="flex-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium py-2 rounded-full hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              className="flex-1 bg-gray-900 dark:bg-btn-dark text-white dark:text-white text-sm font-medium py-2 rounded-full hover:bg-gray-700 dark:hover:bg-btn-dark-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               {isPending ? "Saving…" : "Confirm"}
             </button>
             <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-full transition-colors">
@@ -275,7 +275,7 @@ export default function TaskRow({ task, currentOdometer, vehicleId, licensePlate
                 {editError && <p className="text-xs text-red-500">{editError}</p>}
                 <div className="flex gap-2 pt-1">
                   <button type="submit" disabled={editPending}
-                    className="text-xs font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-3 py-1.5 rounded-full hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors disabled:opacity-50">
+                    className="text-xs font-medium bg-gray-900 dark:bg-btn-dark text-white dark:text-white px-3 py-1.5 rounded-full hover:bg-gray-700 dark:hover:bg-btn-dark-hover transition-colors disabled:opacity-50">
                     {editPending ? "Saving…" : "Save"}
                   </button>
                   <button type="button" onClick={() => { setEditing(false); setEditError(null) }}
