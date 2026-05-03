@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   },
 }
 
-const AUTH_ROUTES = ["/login", "/signup"]
+const AUTH_ROUTES = ["/login", "/signup", "/new-vehicle"]
 
 export default async function RootLayout({
   children,

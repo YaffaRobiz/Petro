@@ -37,7 +37,13 @@ export default function EditVehicleForm({
   hasLogs: boolean
 }) {
   const [editing, setEditing] = useState(false)
-  const [dirty, setDirty] = useState(false)
+  const [dirty, setDirty]     = useState(false)
+  const [year, setYear]       = useState(String(vehicle.year))
+
+  const currentYear = new Date().getFullYear()
+  const yearError = year.length === 4 && parseInt(year) > currentYear
+    ? `Year can't be greater than ${currentYear}`
+    : null
 
   if (!editing) {
     const fields = [
@@ -111,10 +117,12 @@ export default function EditVehicleForm({
             inputMode="numeric"
             pattern="[0-9]{4}"
             maxLength={4}
-            defaultValue={vehicle.year}
+            value={year}
             required
-            className={inputCls}
+            onChange={e => { setYear(e.target.value.replace(/\D/g, "")); setDirty(true) }}
+            className={yearError ? `${inputCls} border-red-300 dark:border-red-700 focus:ring-red-300` : inputCls}
           />
+          {yearError && <p className="mt-1 text-xs text-red-500">{yearError}</p>}
         </div>
         <div>
           <label className={labelCls}>Fuel Type</label>
@@ -159,8 +167,8 @@ export default function EditVehicleForm({
       <div className="flex gap-3 mt-6 pt-5 border-t border-gray-100 dark:border-gray-800">
         <button
           type="submit"
-          disabled={!dirty}
-          className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium px-5 py-2 rounded-full hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          disabled={!dirty || !!yearError}
+          className="bg-gray-900 dark:bg-btn-dark text-white dark:text-white text-sm font-medium px-5 py-2 rounded-full hover:bg-gray-700 dark:hover:bg-btn-dark-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Save changes
         </button>

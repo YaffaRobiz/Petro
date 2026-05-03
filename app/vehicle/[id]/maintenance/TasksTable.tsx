@@ -57,7 +57,7 @@ export default function TasksTable({
     <button
       onClick={() => setFilter(f)}
       className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-        filter === f ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900" : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+        filter === f ? "bg-gray-900 dark:bg-btn-dark text-white dark:text-white" : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
       }`}
     >
       {label}

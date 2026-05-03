@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
-import Link from "next/link"
 import { switchVehicle } from "@/app/actions/switchVehicle"
+import NewVehicleModal from "./NewVehicleModal"
 
 type Vehicle = {
   id: string
@@ -21,6 +21,7 @@ export default function VehicleSwitcher({
   selectedId: string | null
 }) {
   const [open, setOpen] = useState(false)
+  const [addOpen, setAddOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
 
@@ -44,10 +45,11 @@ export default function VehicleSwitcher({
 
   return (
     <div className="relative">
+      <NewVehicleModal open={addOpen} onClose={() => setAddOpen(false)} />
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute bottom-full left-0 right-0 mb-2 z-20 bg-white border border-gray-100 rounded-xl overflow-hidden shadow-lg">
+          <div className="absolute bottom-full left-0 right-0 mb-2 z-20 bg-white dark:bg-btn-dark border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden shadow-lg">
             {vehicles.map(v => {
               const name = v.nickname || `${v.make} ${v.model}`
               const isActive = v.id === selected.id
@@ -55,11 +57,11 @@ export default function VehicleSwitcher({
                 <button
                   key={v.id}
                   onClick={() => handleSwitch(v.id)}
-                  className={`w-full flex items-center gap-2.5 px-4 py-3 text-left transition-colors hover:bg-gray-50 ${isActive ? "bg-gray-50" : ""}`}
+                  className={`w-full flex items-center gap-2.5 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-btn-dark-hover ${isActive ? "bg-gray-50 dark:bg-btn-dark-hover" : ""}`}
                 >
-                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? "bg-green-500" : "bg-gray-300"}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600"}`} />
                   <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-medium text-gray-800 truncate">{name}</p>
+                    <p className="text-[13px] font-medium text-gray-800 dark:text-gray-100 truncate">{name}</p>
                     <p className="text-xs text-gray-400">{v.license_plate}</p>
                   </div>
                   {isActive && (
@@ -70,14 +72,13 @@ export default function VehicleSwitcher({
                 </button>
               )
             })}
-            <div className="border-t border-gray-100">
-              <Link
-                href="/new-vehicle"
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-2 px-4 py-3 text-sm text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+            <div className="border-t border-gray-100 dark:border-gray-700">
+              <button
+                onClick={() => { setOpen(false); setAddOpen(true) }}
+                className="w-full flex items-center gap-2 px-4 py-3 text-sm text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-btn-dark-hover transition-colors"
               >
                 <span className="text-base leading-none font-medium">+</span> Add vehicle
-              </Link>
+              </button>
             </div>
           </div>
         </>
@@ -85,11 +86,11 @@ export default function VehicleSwitcher({
 
       <button
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-colors text-left"
+        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-btn-dark-hover border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-[#252a32] transition-colors text-left"
       >
         <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-medium text-gray-700 truncate">{displayName}</p>
+          <p className="text-[13px] font-medium text-gray-700 dark:text-gray-100 truncate">{displayName}</p>
           <p className="text-[11px] text-gray-400 mt-0.5">{selected.license_plate}</p>
         </div>
         <svg

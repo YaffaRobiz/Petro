@@ -7,7 +7,12 @@ const config: Config = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        "btn-dark":       "#15181d",
+        "btn-dark-hover": "#1e2228",
+      },
+    },
   },
   plugins: [],
 };

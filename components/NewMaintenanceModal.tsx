@@ -195,7 +195,7 @@ export default function NewMaintenanceModal({
     <>
       <button
         onClick={() => { setOpen(true); setTab("future"); setError(null) }}
-        className="flex items-center gap-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium px-4 py-2 rounded-full hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors"
+        className="flex items-center gap-1.5 bg-gray-900 dark:bg-btn-dark text-white dark:text-white text-sm font-medium px-4 py-2 rounded-full hover:bg-gray-700 dark:hover:bg-btn-dark-hover transition-colors"
       >
         <span className="text-base leading-none">+</span> Add service
       </button>
@@ -263,7 +263,7 @@ export default function NewMaintenanceModal({
 
               <div className="flex gap-3 pt-1">
                 <button type="submit" disabled={isPending || !futureCanSubmit}
-                  className="flex-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium py-2 rounded-full hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                  className="flex-1 bg-gray-900 dark:bg-btn-dark text-white dark:text-white text-sm font-medium py-2 rounded-full hover:bg-gray-700 dark:hover:bg-btn-dark-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                   {isPending ? "Saving…" : "Save service"}
                 </button>
                 <button type="button" onClick={handleClose} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-full transition-colors">
@@ -348,7 +348,7 @@ export default function NewMaintenanceModal({
 
               <div className="flex gap-3 pt-1">
                 <button type="submit" disabled={isPending || !pastCanSubmit}
-                  className="flex-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium py-2 rounded-full hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                  className="flex-1 bg-gray-900 dark:bg-btn-dark text-white dark:text-white text-sm font-medium py-2 rounded-full hover:bg-gray-700 dark:hover:bg-btn-dark-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                   {isPending ? "Saving…" : "Save service"}
                 </button>
                 <button type="button" onClick={handleClose} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-full transition-colors">

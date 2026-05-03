@@ -26,7 +26,7 @@ export default function AppShell({
       <button
         onClick={() => setOpen(o => !o)}
         aria-label={open ? "Collapse sidebar" : "Expand sidebar"}
-        className={`fixed top-[22px] z-30 flex items-center justify-center w-[18px] h-[18px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-full shadow-sm text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:shadow-md transition-[left] duration-300 ease-in-out`}
+        className={`fixed top-[22px] z-30 flex items-center justify-center w-[18px] h-[18px] bg-white dark:bg-btn-dark border border-gray-200 dark:border-gray-700 rounded-full shadow-sm text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:shadow-md transition-[left] duration-300 ease-in-out`}
         style={{ left: open ? "211px" : "8px" }}
       >
         <svg
