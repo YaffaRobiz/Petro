@@ -1,14 +1,18 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect, notFound } from "next/navigation"
 import NewMaintenanceModal, { type LastServicedMap } from "@/components/NewMaintenanceModal"
-import TasksTable from "./TasksTable"
+import TasksTable, { type Filter } from "./TasksTable"
 
 export default async function MaintenanceLogPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ filter?: string }>
 }) {
   const { id } = await params
+  const { filter: filterParam } = await searchParams
+  const initialFilter: Filter = filterParam === "soon" || filterParam === "due" ? filterParam : "all"
   const licensePlate = decodeURIComponent(id)
 
   const supabase = await createClient()
@@ -120,6 +124,7 @@ export default async function MaintenanceLogPage({
           licensePlate={licensePlate}
           lastServicedByType={lastServicedByType}
           logInfoById={logInfoById}
+          initialFilter={initialFilter}
         />
       </div>
     </div>
