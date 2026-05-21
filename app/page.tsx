@@ -2,22 +2,34 @@ import { createClient } from "@/lib/supabase/server"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import MonthlyChart, { type MonthlyChartData } from "@/components/MonthlyChart"
+import MonthlySpentCard from "@/components/MonthlySpentCard"
+import { type MonthlyBreakdown } from "@/components/MonthlyChart"
+import FuelConsumptionCard from "@/components/FuelConsumptionCard"
 import NewFillUpModal from "@/components/NewFillUpModal"
 
-function buildSparklinePath(values: number[], w: number, h: number) {
-  if (values.length < 2) return { line: "", area: "" }
-  const min = Math.min(...values)
-  const max = Math.max(...values)
-  const range = max - min || 1
-  const pts = values.map((v, i) => ({
-    x: (i / (values.length - 1)) * w,
-    y: h * 0.9 - ((v - min) / range) * (h * 0.8),
-  }))
-  const d = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ")
-  const area = `${d} L ${pts[pts.length - 1].x.toFixed(1)},${h} L ${pts[0].x.toFixed(1)},${h} Z`
-  return { line: d, area }
+type TaskStatus = "completed" | "overdue" | "due_soon" | "ok"
+
+function getTaskStatus(
+  task: { completed_log_id: string | null; due_date: string | null; expected_odometer: number | null },
+  currentOdo: number,
+  now: Date,
+): TaskStatus {
+  if (task.completed_log_id) return "completed"
+  if (task.due_date) {
+    const days = Math.floor((new Date(task.due_date).getTime() - now.getTime()) / 86400000)
+    if (days < 0) return "overdue"
+    if (days <= 30) return "due_soon"
+    return "ok"
+  }
+  if (task.expected_odometer !== null) {
+    const km = task.expected_odometer - currentOdo
+    if (km <= 0) return "overdue"
+    if (km <= 1000) return "due_soon"
+    return "ok"
+  }
+  return "ok"
 }
+
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -38,12 +50,10 @@ export default async function DashboardPage() {
   const vehicle = vehicles.find(v => v.id === selectedId) ?? vehicles[0]
 
   const now = new Date()
-  const thisMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`
   const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  const prevMonthStr = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}-01`
   const prevMonthName = prevMonth.toLocaleString("en-US", { month: "long" })
 
-  const [fuelRes, maintRes] = await Promise.all([
+  const [fuelRes, maintRes, tasksRes] = await Promise.all([
     supabase
       .from("fuel_logs")
       .select("id, date, cost, vehicle_id, odometer, liters")
@@ -54,39 +64,28 @@ export default async function DashboardPage() {
       .select("id, date, cost, vehicle_id, service_type, odometer")
       .eq("vehicle_id", vehicle.id)
       .order("date"),
+    supabase
+      .from("service_tasks")
+      .select("id, service_type, due_date, expected_odometer, completed_log_id")
+      .eq("vehicle_id", vehicle.id)
+      .order("created_at", { ascending: false }),
   ])
 
   const fuelLogs = fuelRes.data ?? []
   const maintLogs = maintRes.data ?? []
+  const svcTasks = tasksRes.data ?? []
 
-  // Monthly spend (this vehicle only)
-  const thisMonthSpent = [
-    ...fuelLogs.filter(l => l.date >= thisMonthStr),
-    ...maintLogs.filter(l => l.date >= thisMonthStr),
-  ].reduce((s, l) => s + Number(l.cost), 0)
-
-  const lastMonthSpent = [
-    ...fuelLogs.filter(l => l.date >= prevMonthStr && l.date < thisMonthStr),
-    ...maintLogs.filter(l => l.date >= prevMonthStr && l.date < thisMonthStr),
-  ].reduce((s, l) => s + Number(l.cost), 0)
-
-  const spentDiff = thisMonthSpent - lastMonthSpent
-  const spentPct = lastMonthSpent > 0 ? Math.abs((spentDiff / lastMonthSpent) * 100) : null
-  const spentDown = spentDiff <= 0
-
-  // Monthly spending Jan–Dec of current year (for bar chart)
+  // Monthly spending Jan–Dec of current year (for bar chart, split by type)
   const MONTH_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
   const currentMonthIdx = now.getMonth()
-  const chartData: MonthlyChartData[] = MONTH_LABELS.map((label, i) => {
+  const monthlyData: MonthlyBreakdown[] = MONTH_LABELS.map((label, i) => {
     const prefix = `${now.getFullYear()}-${String(i + 1).padStart(2, "0")}`
-    const amount = [
-      ...fuelLogs.filter(l => l.date.startsWith(prefix)),
-      ...maintLogs.filter(l => l.date.startsWith(prefix)),
-    ].reduce((s, l) => s + Number(l.cost), 0)
-    return { label, amount, isCurrent: i === currentMonthIdx }
+    const fuelAmount = fuelLogs.filter(l => l.date.startsWith(prefix)).reduce((s, l) => s + Number(l.cost), 0)
+    const maintAmount = maintLogs.filter(l => l.date.startsWith(prefix)).reduce((s, l) => s + Number(l.cost), 0)
+    return { label, fuelAmount, maintAmount, isCurrent: i === currentMonthIdx }
   })
 
-  // Fuel efficiency (km/L)
+  // Fuel efficiency (km/L) — all fill-ups (used for last fill-up segment)
   const vFuel = [...fuelLogs].sort((a, b) => Number(a.odometer) - Number(b.odometer))
   const efficiencies: number[] = []
   for (let i = 1; i < vFuel.length; i++) {
@@ -94,31 +93,43 @@ export default async function DashboardPage() {
     const liters = Number(vFuel[i].liters)
     if (dist > 0 && liters > 0) efficiencies.push(dist / liters)
   }
-  const avgEff = efficiencies.length > 0
-    ? efficiencies.reduce((s, e) => s + e, 0) / efficiencies.length
-    : null
 
-  // Efficiency delta: compare first-half avg vs second-half avg
-  const effHalf = Math.floor(efficiencies.length / 2)
-  const prevAvgEff = effHalf > 0
-    ? efficiencies.slice(0, effHalf).reduce((s, e) => s + e, 0) / effHalf
-    : null
-  const currAvgEff = effHalf > 0
-    ? efficiencies.slice(effHalf).reduce((s, e) => s + e, 0) / (efficiencies.length - effHalf)
-    : null
-  const effDelta = currAvgEff !== null && prevAvgEff !== null ? currAvgEff - prevAvgEff : null
-  const effPct = effDelta !== null && prevAvgEff !== null ? Math.abs((effDelta / prevAvgEff) * 100) : null
-  const effUp = effDelta !== null && effDelta > 0  // km/L: higher = better
+  // Dated efficiency values for the fuel card
+  const filledEfficiencies: { date: string; kml: number }[] = []
+  for (let i = 1; i < vFuel.length; i++) {
+    const dist = Number(vFuel[i].odometer) - Number(vFuel[i - 1].odometer)
+    const liters = Number(vFuel[i].liters)
+    if (dist > 0 && liters > 0) filledEfficiencies.push({ date: vFuel[i].date, kml: dist / liters })
+  }
 
-  const { line: sparkLine, area: sparkArea } = buildSparklinePath(efficiencies.slice(-12), 110, 44)
+  const d30 = new Date(now); d30.setDate(d30.getDate() - 30)
+  const d60 = new Date(now); d60.setDate(d60.getDate() - 60)
+  const str30 = d30.toISOString().slice(0, 10)
+  const str60 = d60.toISOString().slice(0, 10)
+  const kml30d     = filledEfficiencies.filter(e => e.date >= str30).map(e => e.kml)
+  const kmlPrev30d = filledEfficiencies.filter(e => e.date >= str60 && e.date < str30).map(e => e.kml)
+  const allKml     = filledEfficiencies.map(e => e.kml)
 
-  // Last fill-up
-  const lastFill = vFuel.length > 0 ? vFuel[vFuel.length - 1] : null
-  const lastFillEff = efficiencies.length > 0 ? efficiencies[efficiencies.length - 1] : null
-  const lastFillDate = lastFill ? new Date(lastFill.date + "T00:00:00") : null
-  const daysAgo = lastFillDate
-    ? Math.floor((now.getTime() - lastFillDate.getTime()) / 86400000)
-    : null
+  const prevMonthPrefix = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}`
+  const prevMonthKmls   = filledEfficiencies.filter(e => e.date.startsWith(prevMonthPrefix)).map(e => e.kml)
+
+  const monthlyAvgsKml: (number | null)[] = Array.from({ length: 12 }, (_, i) => {
+    const prefix = `${now.getFullYear()}-${String(i + 1).padStart(2, "0")}`
+    const vals = filledEfficiencies.filter(e => e.date.startsWith(prefix)).map(e => e.kml)
+    return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : null
+  })
+
+  const fuelCardData = {
+    avg30dKml:     kml30d.length > 0 ? kml30d.reduce((s, v) => s + v, 0) / kml30d.length : null,
+    prevAvg30dKml: kmlPrev30d.length > 0 ? kmlPrev30d.reduce((s, v) => s + v, 0) / kmlPrev30d.length : null,
+    lastFillKml:   efficiencies.length > 0 ? efficiencies[efficiencies.length - 1] : null,
+    prevMonthKml:  prevMonthKmls.length > 0 ? prevMonthKmls.reduce((s, v) => s + v, 0) / prevMonthKmls.length : null,
+    allTimeAvgKml: allKml.length > 0 ? allKml.reduce((s, v) => s + v, 0) / allKml.length : null,
+    bestKml:       allKml.length > 0 ? Math.max(...allKml) : null,
+    worstKml:      allKml.length > 0 ? Math.min(...allKml) : null,
+    monthlyAvgsKml,
+  }
+
 
   // Current odometer
   const allOdos = [
@@ -127,10 +138,44 @@ export default async function DashboardPage() {
   ]
   const currentOdo = Math.max(vehicle.initial_odometer, ...(allOdos.length ? allOdos : [0]))
 
-  // Recent maintenance
-  const recentMaint = [...maintLogs]
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 3)
+  // Odometer stats
+  const totalKm = currentOdo - vehicle.initial_odometer
+  const thisMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`
+  const logsBeforeMonth = [
+    ...fuelLogs.filter(l => l.date < thisMonthStart),
+    ...maintLogs.filter(l => l.date < thisMonthStart),
+  ]
+  const odoAtMonthStart = logsBeforeMonth.length > 0
+    ? Math.max(...logsBeforeMonth.map(l => Number(l.odometer)))
+    : vehicle.initial_odometer
+  const kmThisMonth = currentOdo - odoAtMonthStart
+  const allLogDates = [...fuelLogs, ...maintLogs].map(l => l.date).sort()
+  const firstLogDate = allLogDates.length > 0 ? new Date(allLogDates[0] + "T00:00:00") : null
+  const daysSinceFirst = firstLogDate
+    ? Math.max(1, Math.floor((now.getTime() - firstLogDate.getTime()) / 86400000))
+    : null
+  const avgKmPerDay = daysSinceFirst !== null && totalKm > 0
+    ? Math.round(totalKm / daysSinceFirst)
+    : null
+
+  // Service task counts for dashboard badges
+  const overdueCount = svcTasks.filter(t => {
+    if (t.completed_log_id) return false
+    if (t.due_date) return new Date(t.due_date) < now
+    if (t.expected_odometer !== null) return t.expected_odometer < currentOdo
+    return false
+  }).length
+
+  const dueSoonCount = svcTasks.filter(t => {
+    if (t.completed_log_id) return false
+    if (t.due_date) { const d = Math.floor((new Date(t.due_date).getTime() - now.getTime()) / 86400000); return d >= 0 && d <= 30 }
+    if (t.expected_odometer !== null) { const km = t.expected_odometer - currentOdo; return km > 0 && km <= 1000 }
+    return false
+  }).length
+
+  // Dashboard maintenance preview — top 3 tasks sorted by urgency
+  const logById = Object.fromEntries(maintLogs.map(l => [l.id, l]))
+  const dashboardTasks = svcTasks.slice(0, 3)
 
   const primaryName = vehicle.nickname || `${vehicle.make} ${vehicle.model}`
   const plateEncoded = encodeURIComponent(vehicle.license_plate)
@@ -155,91 +200,111 @@ export default async function DashboardPage() {
       <div className="px-8 pb-8 grid grid-cols-5 gap-4">
 
         {/* Monthly Spent */}
-        <div className={`col-span-5 ${cardCls}`}>
-          <p className={labelCls}>Monthly Spent</p>
-          <div className="flex items-end gap-3 mt-3">
-            <span className="text-[46px] font-bold text-gray-900 dark:text-white leading-none tracking-tight">
-              €{thisMonthSpent.toFixed(2)}
+        <div className={`col-span-3 ${cardCls}`}>
+          <MonthlySpentCard monthlyData={monthlyData} prevMonthName={prevMonthName} />
+        </div>
+
+        {/* Odometer */}
+        <div className={`col-span-2 ${cardCls}`}>
+          <p className={labelCls}>Odometer</p>
+          <div className="flex items-baseline gap-2 mt-4">
+            <span className="text-[40px] font-medium text-gray-900 dark:text-white leading-none">
+              {currentOdo.toLocaleString("en-US")}
             </span>
-            {spentPct !== null && (
-              <div className="mb-1 flex items-center gap-2 text-[13px]">
-                <span className={`font-semibold px-2 py-0.5 rounded-full ${spentDown ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400"}`}>
-                  {spentDown ? "↓" : "↑"} {spentPct.toFixed(1)}%
-                </span>
-                <span className="text-gray-400 dark:text-gray-500">
-                  €{Math.abs(spentDiff).toFixed(2)} {spentDown ? "less" : "more"} than {prevMonthName}
-                </span>
-              </div>
-            )}
+            <span className="text-base text-gray-400 dark:text-gray-500">km</span>
           </div>
-          <MonthlyChart data={chartData} />
+          <div className="mt-16 pt-4 border-t border-gray-100 dark:border-gray-800 grid grid-cols-3 gap-3">
+            {[
+              { label: "Total", value: `+${totalKm.toLocaleString("en-US")} km` },
+              { label: "This month", value: `+${kmThisMonth.toLocaleString("en-US")} km` },
+              { label: "Avg / day", value: avgKmPerDay !== null ? `${avgKmPerDay} km` : "—" },
+            ].map(({ label, value }) => (
+              <div key={label}>
+                <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{label}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{value}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Fuel Consumption */}
         <div className={`col-span-3 ${cardCls}`}>
-          <div className="flex items-start justify-between">
-            <p className={labelCls}>Fuel Consumption</p>
-            {efficiencies.length >= 2 && (
-              <span className="text-[11px] text-gray-300 dark:text-gray-600">12-mo trend</span>
-            )}
-          </div>
-          <div className="flex items-end justify-between mt-3">
-            <div>
-              {avgEff !== null ? (
-                <div className="flex items-baseline gap-2">
-                  <span className="text-[40px] font-bold text-gray-900 dark:text-white leading-none tracking-tight">
-                    {avgEff.toFixed(1)}
-                  </span>
-                  <span className="text-base text-gray-400 dark:text-gray-500 pb-0.5">km/L</span>
-                </div>
-              ) : (
-                <span className="text-3xl font-bold text-gray-200 dark:text-gray-700 leading-none">—</span>
-              )}
-              {effPct !== null && prevAvgEff !== null && (
-                <div className="mt-2 flex items-center gap-2 text-[13px]">
-                  <span className={`font-semibold px-2 py-0.5 rounded-full ${effUp ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400"}`}>
-                    {effUp ? "↑" : "↓"} {effPct.toFixed(1)}%
-                  </span>
-                  <span className="text-gray-400 dark:text-gray-500">
-                    from {prevAvgEff.toFixed(1)}
-                  </span>
-                </div>
-              )}
-            </div>
-            {sparkLine && (
-              <svg width="110" height="44" className="text-green-500 opacity-75 flex-shrink-0">
-                <defs>
-                  <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="currentColor" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <path d={sparkArea} fill="url(#sg)" />
-                <path d={sparkLine} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            )}
-          </div>
+          <FuelConsumptionCard data={fuelCardData} />
         </div>
 
         {/* Maintenance */}
         <div className={`col-span-2 ${cardCls}`}>
-          <p className={labelCls}>Maintenance</p>
-          {recentMaint.length > 0 ? (
+          <div className="flex items-center justify-between">
+            <p className={labelCls}>Maintenance</p>
+            <div className="flex items-center gap-1.5">
+              {dueSoonCount > 0 && (
+                <Link
+                  href={`/vehicle/${plateEncoded}/maintenance?filter=soon`}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-50 dark:bg-orange-900/20 text-orange-500 dark:text-orange-400 text-[11px] font-semibold hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
+                >
+                  <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                    <path d="M8 1L1 14h14L8 1zm0 2.5l5.5 9.5H2.5L8 3.5zM7.25 7v3h1.5V7h-1.5zm0 4v1.5h1.5V11h-1.5z"/>
+                  </svg>
+                  {dueSoonCount}
+                </Link>
+              )}
+              {overdueCount > 0 && (
+                <Link
+                  href={`/vehicle/${plateEncoded}/maintenance?filter=due`}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 text-[11px] font-semibold hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                >
+                  <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                    <path d="M8 1L1 14h14L8 1zm0 2.5l5.5 9.5H2.5L8 3.5zM7.25 7v3h1.5V7h-1.5zm0 4v1.5h1.5V11h-1.5z"/>
+                  </svg>
+                  {overdueCount}
+                </Link>
+              )}
+            </div>
+          </div>
+          {dashboardTasks.length > 0 ? (
             <ul className="mt-3 space-y-2.5">
-              {recentMaint.map(m => (
-                <li key={m.id} className="flex items-start gap-2.5">
-                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{m.service_type}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">
-                      {new Date(m.date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                    </p>
-                  </div>
-                </li>
-              ))}
+              {dashboardTasks.map(t => {
+                const status = getTaskStatus(t, currentOdo, now)
+                const dotColor =
+                  status === "completed" ? "bg-green-400" :
+                  status === "overdue"   ? "bg-red-500" :
+                  status === "due_soon"  ? "bg-orange-400" :
+                  "bg-gray-300 dark:bg-gray-600"
+
+                let subtitle = ""
+                if (status === "completed" && t.completed_log_id) {
+                  const log = logById[t.completed_log_id]
+                  if (log) {
+                    const d = new Date(log.date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+                    subtitle = `Done ${d}${log.odometer ? ` · ${Number(log.odometer).toLocaleString()} km` : ""}`
+                  }
+                } else if (t.due_date) {
+                  const days = Math.floor((new Date(t.due_date).getTime() - now.getTime()) / 86400000)
+                  const dateStr = new Date(t.due_date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+                  subtitle = days < 0
+                    ? `Overdue · ${Math.abs(days)} day${Math.abs(days) !== 1 ? "s" : ""}`
+                    : days === 0 ? "Due today"
+                    : `Due ${dateStr}`
+                } else if (t.expected_odometer !== null) {
+                  const km = t.expected_odometer - currentOdo
+                  subtitle = km <= 0
+                    ? `Overdue · ${Math.abs(km).toLocaleString()} km`
+                    : `In ${km.toLocaleString()} km`
+                }
+
+                return (
+                  <li key={t.id} className="flex items-start gap-2.5">
+                    <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotColor}`} />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{t.service_type ?? "—"}</p>
+                      {subtitle && <p className="text-xs text-gray-400 dark:text-gray-500">{subtitle}</p>}
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
           ) : (
-            <p className="mt-3 text-sm text-gray-300 dark:text-gray-700">No services logged</p>
+            <p className="mt-3 text-sm text-gray-300 dark:text-gray-700">No tasks added</p>
           )}
           <Link
             href={`/vehicle/${plateEncoded}/maintenance`}
@@ -249,52 +314,6 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
-        {/* Last Fill-Up */}
-        <div className={`col-span-3 ${cardCls}`}>
-          <div className="flex items-start justify-between">
-            <p className={labelCls}>Last Fill-Up</p>
-            {lastFill && lastFillDate && (
-              <span className="text-xs text-gray-400 dark:text-gray-500">
-                {lastFillDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                {daysAgo !== null && ` · ${daysAgo} day${daysAgo !== 1 ? "s" : ""} ago`}
-              </span>
-            )}
-          </div>
-          {lastFill ? (
-            <div className="grid grid-cols-4 gap-4 mt-4">
-              {[
-                { value: `€${Number(lastFill.cost).toFixed(2)}`, label: "total" },
-                { value: Number(lastFill.liters).toFixed(1), label: "liters" },
-                { value: `€${(Number(lastFill.cost) / Number(lastFill.liters)).toFixed(2)}`, label: "per liter" },
-                { value: lastFillEff !== null ? lastFillEff.toFixed(1) : "—", label: "km/L" },
-              ].map(({ value, label }) => (
-                <div key={label}>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">{value}</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{label}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="mt-3 text-sm text-gray-300 dark:text-gray-700">No fill-ups logged</p>
-          )}
-          <Link
-            href={`/vehicles/${plateEncoded}/fuel`}
-            className="mt-4 inline-block text-xs font-medium text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-lg transition-colors"
-          >
-            View all
-          </Link>
-        </div>
-
-        {/* Odometer */}
-        <div className={`col-span-2 ${cardCls}`}>
-          <p className={labelCls}>Odometer</p>
-          <div className="flex items-baseline gap-2 mt-4">
-            <span className="text-[40px] font-bold text-gray-900 dark:text-white leading-none tracking-tight">
-              {currentOdo.toLocaleString("en-US")}
-            </span>
-            <span className="text-base text-gray-400 dark:text-gray-500">km</span>
-          </div>
-        </div>
 
       </div>
     </div>

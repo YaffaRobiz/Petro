@@ -6,7 +6,7 @@ import type { ServiceTask } from "@/lib/types"
 import type { LastServicedMap } from "@/components/NewMaintenanceModal"
 import { SERVICE_SCHEMA } from "@/lib/serviceSchema"
 
-type Filter = "all" | "soon" | "due"
+export type Filter = "all" | "soon" | "due"
 export type LogInfo = { date: string; cost: number; odometer: number; notes: string | null }
 
 function getStatusKey(task: ServiceTask, currentOdometer: number): "completed" | "overdue" | "due_soon" | "ok" {
@@ -28,6 +28,7 @@ function getStatusKey(task: ServiceTask, currentOdometer: number): "completed" |
 
 export default function TasksTable({
   tasks, currentOdometer, vehicleId, licensePlate, lastServicedByType, logInfoById,
+  initialFilter = "all",
 }: {
   tasks: ServiceTask[]
   currentOdometer: number
@@ -35,8 +36,9 @@ export default function TasksTable({
   licensePlate: string
   lastServicedByType: LastServicedMap
   logInfoById: Record<string, LogInfo>
+  initialFilter?: Filter
 }) {
-  const [filter, setFilter]               = useState<Filter>("all")
+  const [filter, setFilter]               = useState<Filter>(initialFilter)
   const [categoryFilter, setCategoryFilter] = useState("all")
 
   const presentCategories = Array.from(new Set(tasks.map(t => t.category)))

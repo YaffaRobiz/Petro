@@ -53,9 +53,19 @@ export default async function FuelLogPage({
     }
   }
 
-  const effValues = Object.values(efficiencyById).filter((v): v is number => v !== null)
-  const avgEfficiency = effValues.length > 0
-    ? effValues.reduce((s, v) => s + v, 0) / effValues.length
+  // 90-day rolling average for the stat card
+  const ninetyDaysAgo = new Date()
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
+  const ninetyDayStr = ninetyDaysAgo.toISOString().slice(0, 10)
+  const sortedAsc90 = sortedAsc.filter(f => f.date >= ninetyDayStr)
+  const effValues90: number[] = []
+  for (let i = 1; i < sortedAsc90.length; i++) {
+    const dist = Number(sortedAsc90[i].odometer) - Number(sortedAsc90[i - 1].odometer)
+    const liters = Number(sortedAsc90[i].liters)
+    if (dist > 0 && liters > 0) effValues90.push(dist / liters)
+  }
+  const avgEfficiency = effValues90.length > 0
+    ? effValues90.reduce((s, v) => s + v, 0) / effValues90.length
     : null
 
   const totalCost = allLogs.reduce((s, l) => s + Number(l.cost), 0)
@@ -123,7 +133,7 @@ export default async function FuelLogPage({
                     {avgEfficiency.toFixed(1)}
                   </p>
                   <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-                    €{allLogs.length > 0 ? (totalCost / allLogs.length).toFixed(2) : "—"} avg/fill
+                    90-day avg
                   </p>
                 </>
               ) : (

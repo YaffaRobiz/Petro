@@ -8,6 +8,13 @@ export type MonthlyChartData = {
   isCurrent: boolean
 }
 
+export type MonthlyBreakdown = {
+  label: string
+  fuelAmount: number
+  maintAmount: number
+  isCurrent: boolean
+}
+
 const CURRENT_COLOR = "#9bc53d"
 const DEFAULT_COLOR = "#dcdcd3"
 const HOVER_COLOR = "#c4c4bb"
